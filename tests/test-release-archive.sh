@@ -3,6 +3,10 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly ROOT_DIR
+VERSION="$(<"$ROOT_DIR/VERSION")"
+readonly VERSION
+ARCHIVE_ROOT="lfs-linux-$VERSION"
+readonly ARCHIVE_ROOT
 TMP_ROOT="$(mktemp -d /tmp/lfs-linux-release.XXXXXX)"
 readonly TMP_ROOT
 trap 'rm -rf "$TMP_ROOT"' EXIT
@@ -21,9 +25,9 @@ if [[ -f "$ROOT_DIR/packaging/aur/PKGBUILD" ]]; then
 fi
 
 listing="$(tar -tzf "$archive_one")"
-grep -Fq 'lfs-linux-0.1.0/bin/lfs-linux' <<<"$listing"
-grep -Fq 'lfs-linux-0.1.0/bin/lfs-linux-desktop' <<<"$listing"
-grep -Fq 'lfs-linux-0.1.0/libexec/lfs-linux-core' <<<"$listing"
+grep -Fq "$ARCHIVE_ROOT/bin/lfs-linux" <<<"$listing"
+grep -Fq "$ARCHIVE_ROOT/bin/lfs-linux-desktop" <<<"$listing"
+grep -Fq "$ARCHIVE_ROOT/libexec/lfs-linux-core" <<<"$listing"
 if grep -Eq '(^|/)(legacy|artifacts|\.pi-glla)(/|$)' <<<"$listing"; then
   printf 'local evidence entered release archive\n' >&2
   exit 1
@@ -34,10 +38,11 @@ if grep -Ei '\.(exe|dll|msi|png)$' <<<"$listing"; then
 fi
 
 tar -xzf "$archive_one" -C "$TMP_ROOT"
-LFS_LINUX_SOURCE_ARCHIVE=1 "$TMP_ROOT/lfs-linux-0.1.0/tests/test-public-static.sh" >/dev/null
-"$TMP_ROOT/lfs-linux-0.1.0/tests/test-public-core.sh" >/dev/null
-"$TMP_ROOT/lfs-linux-0.1.0/tests/test-website.sh" >/dev/null
-make -C "$TMP_ROOT/lfs-linux-0.1.0" DESTDIR="$TMP_ROOT/pkgroot" PREFIX=/usr install >/dev/null
-"$TMP_ROOT/lfs-linux-0.1.0/tests/test-package-boundary.sh" "$TMP_ROOT/pkgroot" >/dev/null
+archive_dir="$TMP_ROOT/$ARCHIVE_ROOT"
+LFS_LINUX_SOURCE_ARCHIVE=1 "$archive_dir/tests/test-public-static.sh" >/dev/null
+"$archive_dir/tests/test-public-core.sh" >/dev/null
+"$archive_dir/tests/test-website.sh" >/dev/null
+make -C "$archive_dir" DESTDIR="$TMP_ROOT/pkgroot" PREFIX=/usr install >/dev/null
+"$archive_dir/tests/test-package-boundary.sh" "$TMP_ROOT/pkgroot" >/dev/null
 
 printf '[PASS] release archive is deterministic, self-testing, and excludes local/proprietary evidence\n'

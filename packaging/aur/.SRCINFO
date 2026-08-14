@@ -1,6 +1,6 @@
 pkgbase = lfs-linux
 	pkgdesc = Community Linux launcher for the official Live for Speed build
-	pkgver = 0.1.0
+	pkgver = 0.1.1
 	pkgrel = 1
 	url = https://github.com/mitzracing/lfs-linux
 	install = lfs-linux.install
@@ -27,7 +27,7 @@ pkgbase = lfs-linux
 	optdepends = libnotify: desktop launch error notifications
 	optdepends = vulkan-tools: detailed Vulkan diagnostics
 	optdepends = wmctrl: focus an existing LFS window
-	source = lfs-linux-0.1.0.tar.gz::https://github.com/mitzracing/lfs-linux/releases/download/v0.1.0/lfs-linux-0.1.0.tar.gz
-	sha256sums = 27aacf9848fc6c1912855cfdf2b02e374e3b7bca419ff7c489382f9a66f1dc56
+	source = lfs-linux-0.1.1.tar.gz::https://github.com/mitzracing/lfs-linux/releases/download/v0.1.1/lfs-linux-0.1.1.tar.gz
+	sha256sums = 7d555a069a9fbbe5ff2c1626b941fe20d86d7da7748dda427ea92f1c4560b82a
 
 pkgname = lfs-linux

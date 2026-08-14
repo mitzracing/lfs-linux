@@ -74,7 +74,7 @@ Do not bypass checksum checks. Do not patch `LFS.exe`.
 
 ## Wine runtime problem
 
-Wrapper 0.1.0 accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
+Wrapper 0.1.1 accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
 
 ```bash
 cp -a ~/.local/share/lfs-linux ~/lfs-linux-backup

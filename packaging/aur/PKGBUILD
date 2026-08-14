@@ -1,5 +1,5 @@
 pkgname=lfs-linux
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc='Community Linux launcher for the official Live for Speed build'
 arch=('x86_64')
@@ -32,7 +32,7 @@ optdepends=(
 )
 install=lfs-linux.install
 source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('27aacf9848fc6c1912855cfdf2b02e374e3b7bca419ff7c489382f9a66f1dc56')
+sha256sums=('7d555a069a9fbbe5ff2c1626b941fe20d86d7da7748dda427ea92f1c4560b82a')
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
