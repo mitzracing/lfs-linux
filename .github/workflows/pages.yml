@@ -31,7 +31,7 @@ jobs:
           mkdir -p _site
           cp website/index.html website/styles.css website/feedback.js _site/
           cp share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux.svg _site/icon.svg
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
