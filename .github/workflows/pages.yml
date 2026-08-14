@@ -32,7 +32,7 @@ jobs:
           cp website/index.html website/styles.css website/feedback.js _site/
           cp share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux.svg _site/icon.svg
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - name: Deploy
