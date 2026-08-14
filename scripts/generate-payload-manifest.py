@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 PLAYER_OWNED_PREFIXES = (
     "data/colours/",
     "data/layout/",
+    "data/knw/",
     "data/misc/",
     "data/move/",
     "data/mpr/",
@@ -37,6 +38,8 @@ def sha256(path: Path) -> str:
 def include_path(profile: str, relative: str) -> bool:
     if profile == "wine":
         return relative.startswith("usr/")
+    if profile == "lfs-seed":
+        return True
     return relative not in PLAYER_OWNED_FILES and not relative.startswith(PLAYER_OWNED_PREFIXES)
 
 
@@ -56,7 +59,7 @@ def manifest_lines(root: Path, profile: str) -> list[str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("profile", choices=("lfs", "wine"))
+    parser.add_argument("profile", choices=("lfs", "lfs-seed", "wine"))
     parser.add_argument("root", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()

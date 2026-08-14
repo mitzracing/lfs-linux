@@ -41,6 +41,7 @@ tar -xzf "$archive_one" -C "$TMP_ROOT"
 archive_dir="$TMP_ROOT/$ARCHIVE_ROOT"
 LFS_LINUX_SOURCE_ARCHIVE=1 "$archive_dir/tests/test-public-static.sh" >/dev/null
 "$archive_dir/tests/test-public-core.sh" >/dev/null
+"$archive_dir/tests/test-upgrade.sh" >/dev/null
 python3 "$archive_dir/tests/test-support-static.py" >/dev/null
 python3 "$archive_dir/tests/test-triage-feedback.py" >/dev/null
 "$archive_dir/tests/test-website.sh" >/dev/null

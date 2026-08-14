@@ -32,8 +32,8 @@
       </a>
       <div class="release-chip" aria-label="Current release">
         <span>WRAPPER</span>
-        <strong>0.1.6</strong>
-        <small>LFS 0.7G</small>
+        <strong>0.2.0</strong>
+        <small>LFS 0.8C19 TEST</small>
       </div>
     </div>
   </header>
@@ -65,12 +65,12 @@
         <div class="hero-copy">
           <p class="eyebrow">Arch Linux · Manjaro · x86_64</p>
           <h1 id="hero-title">Race on Linux.<br>Keep LFS stock.</h1>
-          <p>Live for Speed Linux installs verified upstream files into one private Wine prefix. Later launches take the short path to the game.</p>
+          <p>Live for Speed Linux installs the exact official 0.8C19 new-graphics public test into one private Wine prefix. Later launches take the short path to the game.</p>
           <div class="hero-actions">
             <a class="button blue" href="#install">Install the wrapper</a>
             <a class="button orange" href="https://github.com/mitzracing/live-for-speed-linux">Read the source</a>
           </div>
-          <code class="route">lfs-linux → Wine 11.15-1 → LFS.exe → DXVK 3.0.2 → Vulkan</code>
+          <code class="route">lfs-linux → Wine 11.15-1 → LFS.exe → DXVK D3D11 → Vulkan</code>
         </div>
       </section>
 
@@ -83,9 +83,11 @@
           <article>
             <span class="step-number">1</span>
             <div>
-              <h3>Install the community package</h3>
-              <pre><code>yay -S live-for-speed-linux</code></pre>
-              <p>Pamac can show this package when AUR support is enabled.</p>
+              <h3>Install the verified source release</h3>
+              <pre><code>git clone --branch v0.2.0 --depth 1 https://github.com/mitzracing/live-for-speed-linux.git
+cd live-for-speed-linux
+make test &amp;&amp; sudo make install</code></pre>
+              <p>The AUR recipe is ready, but publication still awaits maintainer SSH access.</p>
             </div>
           </article>
           <article>
@@ -102,7 +104,7 @@
               <p>The wrapper verifies the complete stock inventory before Wine starts the untouched game.</p>
             </div>
           </article>
-          <p class="publication"><strong>Publication status:</strong> v0.1.6 source is public. The AUR recipe is validated and awaits maintainer SSH access.</p>
+          <p class="publication"><strong>Public-test channel:</strong> v0.2.0 pins exact LFS 0.8C19 new graphics. Immutable <a href="https://github.com/mitzracing/live-for-speed-linux/releases/tag/v0.1.6">v0.1.6</a> remains the old-graphics 0.7G fallback. AUR publication is pending maintainer SSH access.</p>
         </div>
       </section>
 
@@ -251,7 +253,7 @@
               <li>Official LFS installer size and SHA-256</li>
               <li>Every immutable stock game file</li>
               <li>Every required Wine runtime file and link</li>
-              <li>Both private DXVK D3D9 DLL copies</li>
+              <li>Private DXVK D3D11 and DXGI DLL copies</li>
             </ul>
           </div>
           <div>
@@ -272,8 +274,9 @@
       <section class="side-panel">
         <h2>RELEASE STATUS</h2>
         <div class="side-body status-list">
-          <p><span>Wrapper</span><strong>0.1.6</strong></p>
-          <p><span>Game pin</span><strong>0.7G</strong></p>
+          <p><span>Wrapper</span><strong>0.2.0</strong></p>
+          <p><span>Game pin</span><strong>0.8C19</strong></p>
+          <p><span>Channel</span><strong>PUBLIC TEST</strong></p>
           <p><span>Wine pin</span><strong>11.15-1</strong></p>
           <p><span>DXVK pin</span><strong>3.0.2</strong></p>
           <p><span>Release</span><strong class="ok">IMMUTABLE</strong></p>

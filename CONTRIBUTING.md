@@ -69,15 +69,13 @@ Contributors can use another isolated display when `:111` is unavailable, but mu
 
 A pin update requires:
 
-- official source URL
-- byte size
-- SHA-256 digest
-- clean prefix install
-- stock `LFS.exe` digest
-- DXVK initialization evidence
-- audio stream evidence
-- clean exit
-- updated release notes
+- official source URL, channel, byte size, and SHA-256 digest
+- exact nested-payload inventory and complete stock manifest
+- clean prefix install and stock `LFS.exe` digest
+- migration preservation, interruption recovery, and unknown-update rejection
+- required DXVK DLL digests and initialization evidence
+- native Vulkan, audio stream, gameplay, and clean-exit evidence
+- updated release notes that call a public test a public test
 
 Do not auto-merge game or runtime pin updates.
 

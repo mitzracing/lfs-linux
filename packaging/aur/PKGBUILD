@@ -1,7 +1,7 @@
 pkgname=live-for-speed-linux
-pkgver=0.1.6
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='Unofficial community Linux launcher for Live for Speed'
+pkgdesc='Unofficial launcher for the LFS 0.8C19 new-graphics public test'
 arch=('x86_64')
 url='https://github.com/mitzracing/live-for-speed-linux'
 license=('MIT')
@@ -36,7 +36,7 @@ optdepends=(
 install=live-for-speed-linux.install
 _source_name='live-for-speed-linux'
 source=("$_source_name-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_source_name-$pkgver.tar.gz")
-sha256sums=('0643e9d201326249a88b7ebc87a6a119102cbc438c58dbc8816ec666f37db3cf')
+sha256sums=('30269a41f8bbb98c6027cd1e4a68ecd12e8e33d4cf219208be250a3b5ee226a3')
 
 package() {
   cd "$srcdir/$_source_name-$pkgver"

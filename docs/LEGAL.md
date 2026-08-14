@@ -28,7 +28,7 @@ The terms state that the developers can change LFS and that users must expect up
 
 The wrapper downloads an official DXVK release from its upstream GitHub project. DXVK uses the Zlib license.
 
-The wrapper deploys only the 32-bit `d3d9.dll` required by LFS 0.7G. It does not modify this DLL.
+The wrapper deploys only the audited 32-bit `d3d11.dll` and `dxgi.dll` required by LFS 0.8C19 new graphics. It does not modify either DLL.
 
 ## Names and trademarks
 

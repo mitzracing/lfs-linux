@@ -21,14 +21,45 @@ grep -Fq "State:      $TMP_ROOT/state" <<<"$status_output"
 
 LFS_LINUX_DOWNLOADS_PAGE_FILE="$ROOT_DIR/tests/fixtures/lfs-downloads-current.html" \
   "$ROOT_DIR/bin/lfs-linux" update-check >"$TMP_ROOT/update-current.out"
-grep -Fq 'Status:         current' "$TMP_ROOT/update-current.out"
+grep -Fq 'Website test:   0.8C19 (new graphics public test; LFS_S3_8C19_setup.exe)' "$TMP_ROOT/update-current.out"
+grep -Fq 'Status:         current public-test pin' "$TMP_ROOT/update-current.out"
+
 set +e
 LFS_LINUX_DOWNLOADS_PAGE_FILE="$ROOT_DIR/tests/fixtures/lfs-downloads-drift.html" \
   "$ROOT_DIR/bin/lfs-linux" update-check >"$TMP_ROOT/update-drift.out"
 drift_status=$?
 set -e
 [[ "$drift_status" -eq 2 ]]
-grep -Fq 'review required; wrapper made no game-file changes' "$TMP_ROOT/update-drift.out"
+grep -Fq 'public-test update or drift detected' "$TMP_ROOT/update-drift.out"
+
+legacy_data="$TMP_ROOT/update-legacy-data"
+mkdir -p "$legacy_data"
+cp "$ROOT_DIR/share/lfs-linux/release.env" "$legacy_data/release.env"
+python3 - "$legacy_data/release.env" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+text = path.read_text()
+replacements = {
+    "LFS_VERSION='0.8C19'": "LFS_VERSION='0.7G'",
+    "LFS_CHANNEL='public-test'": "LFS_CHANNEL='stable'",
+    "LFS_PUBLIC_TEST_FAMILY='0.8C'": "LFS_PUBLIC_TEST_FAMILY=''",
+    "LFS_INSTALLER_NAME='LFS_S3_8C19_setup.exe'": "LFS_INSTALLER_NAME='LFS_S3_7G_setup.exe'",
+}
+for old, new in replacements.items():
+    assert old in text
+    text = text.replace(old, new)
+path.write_text(text)
+PY
+set +e
+LFS_LINUX_DATA_DIR="$legacy_data" \
+LFS_LINUX_DOWNLOADS_PAGE_FILE="$ROOT_DIR/tests/fixtures/lfs-downloads-current.html" \
+  "$ROOT_DIR/bin/lfs-linux" update-check >"$TMP_ROOT/update-legacy.out"
+legacy_status=$?
+set -e
+[[ "$legacy_status" -eq 2 ]]
+grep -Fq 'new-graphics public test available (0.8C19)' "$TMP_ROOT/update-legacy.out"
+grep -Fq 'wrapper made no game-file changes' "$TMP_ROOT/update-legacy.out"
 [[ ! -d "$TMP_ROOT/state" ]]
 
 set +e
@@ -101,17 +132,33 @@ LFS_LINUX_DATA_DIR="$test_data" LFS_LINUX_STATE_DIR="$TMP_ROOT/drift-state" LFS_
 install_drift_status=$?
 set -e
 [[ "$install_drift_status" -ne 0 ]]
-grep -Fq 'existing LFS.exe is not an approved upgrade source' "$TMP_ROOT/install-drift.out"
+grep -Fq 'unrecognized LFS update detected' "$TMP_ROOT/install-drift.out"
+grep -Fq 'no files changed' "$TMP_ROOT/install-drift.out"
 [[ ! -e "$TMP_ROOT/drift-state/.managed-by-lfs-linux" ]]
 [[ ! -e "$TMP_ROOT/drift-state/runtime" ]]
+
+mkdir -p "$TMP_ROOT/missing-exe-state/prefix/drive_c/LFS"
+printf 'player-data' >"$TMP_ROOT/missing-exe-state/prefix/drive_c/LFS/profile.dat"
+set +e
+LFS_LINUX_DATA_DIR="$test_data" LFS_LINUX_STATE_DIR="$TMP_ROOT/missing-exe-state" LFS_LINUX_WINE="$fake_wine" \
+  "$ROOT_DIR/bin/lfs-linux" install >"$TMP_ROOT/missing-exe.out" 2>&1
+missing_exe_status=$?
+set -e
+[[ "$missing_exe_status" -ne 0 ]]
+grep -Fq 'no recognized executable or current marker' "$TMP_ROOT/missing-exe.out"
+grep -Fqx 'player-data' "$TMP_ROOT/missing-exe-state/prefix/drive_c/LFS/profile.dat"
+[[ ! -e "$TMP_ROOT/missing-exe-state/.managed-by-lfs-linux" ]]
+[[ ! -e "$TMP_ROOT/missing-exe-state/runtime" ]]
 
 printf '#arch=win64\n' >"$TMP_ROOT/marker-state/prefix/system.reg"
 cat >"$TMP_ROOT/marker-state/install.env" <<EOF
 LFS_VERSION='$LFS_VERSION'
+LFS_CHANNEL='$LFS_CHANNEL'
 LFS_EXE_SHA256='$LFS_EXE_SHA256'
 LFS_STOCK_MANIFEST_SHA256='$LFS_STOCK_MANIFEST_SHA256'
 DXVK_VERSION='$DXVK_VERSION'
-DXVK_D3D9_X32_SHA256='$DXVK_D3D9_X32_SHA256'
+DXVK_D3D11_X32_SHA256='$DXVK_D3D11_X32_SHA256'
+DXVK_DXGI_X32_SHA256='$DXVK_DXGI_X32_SHA256'
 WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'
 WINE_RUNTIME_MANIFEST_SHA256='$fake_wine_manifest_hash'
 WINE_VERSION='wine-11.15'
@@ -135,18 +182,21 @@ mkdir -p "$tiny_data" "$tiny_game/data/skins_dds" "$tiny_game/data/wld" "$tiny_g
   "$tiny_state/runtime/dxvk/x32" "$tiny_state/prefix/drive_c/windows/syswow64"
 printf exe >"$tiny_game/LFS.exe"
 printf helmet >"$tiny_game/data/skins_dds/HEL_DEFAULT.dds"
-printf track >"$tiny_game/data/wld/Blackwood.wld"
-printf vehicle >"$tiny_game/data/veh/XF.vob"
+printf track >"$tiny_game/data/wld/BLACKWOOD.wld"
+printf vehicle >"$tiny_game/data/veh/XFG.vob"
 printf fone >"$tiny_game/data/veh/F1.vob"
-printf dll >"$tiny_state/runtime/dxvk/x32/d3d9.dll"
-printf dll >"$tiny_state/prefix/drive_c/windows/syswow64/d3d9.dll"
+printf d11 >"$tiny_state/runtime/dxvk/x32/d3d11.dll"
+printf dxg >"$tiny_state/runtime/dxvk/x32/dxgi.dll"
+printf d11 >"$tiny_state/prefix/drive_c/windows/syswow64/d3d11.dll"
+printf dxg >"$tiny_state/prefix/drive_c/windows/syswow64/dxgi.dll"
 printf '#arch=win64\n' >"$tiny_state/prefix/system.reg"
 printf '%s\n' 'lfs-linux managed state; unknown files are preserved on removal' >"$tiny_state/.managed-by-lfs-linux"
 exe_hash="$(sha256sum "$tiny_game/LFS.exe" | awk '{print $1}')"
 helmet_hash="$(sha256sum "$tiny_game/data/skins_dds/HEL_DEFAULT.dds" | awk '{print $1}')"
-track_hash="$(sha256sum "$tiny_game/data/wld/Blackwood.wld" | awk '{print $1}')"
-vehicle_hash="$(sha256sum "$tiny_game/data/veh/XF.vob" | awk '{print $1}')"
-dll_hash="$(sha256sum "$tiny_state/runtime/dxvk/x32/d3d9.dll" | awk '{print $1}')"
+track_hash="$(sha256sum "$tiny_game/data/wld/BLACKWOOD.wld" | awk '{print $1}')"
+vehicle_hash="$(sha256sum "$tiny_game/data/veh/XFG.vob" | awk '{print $1}')"
+d3d11_hash="$(sha256sum "$tiny_state/runtime/dxvk/x32/d3d11.dll" | awk '{print $1}')"
+dxgi_hash="$(sha256sum "$tiny_state/runtime/dxvk/x32/dxgi.dll" | awk '{print $1}')"
 cp "$test_data/release.env" "$tiny_data/release.env"
 cp "$test_data/fake-wine.manifest" "$tiny_data/fake-wine.manifest"
 "$ROOT_DIR/scripts/generate-payload-manifest.py" lfs "$tiny_game" "$tiny_data/tiny-stock.manifest" >/dev/null
@@ -167,15 +217,19 @@ LFS_REQUIRED_TRACK_SIZE='5'
 LFS_REQUIRED_TRACK_SHA256='$track_hash'
 LFS_REQUIRED_VEHICLE_SIZE='7'
 LFS_REQUIRED_VEHICLE_SHA256='$vehicle_hash'
-DXVK_D3D9_X32_SIZE='3'
-DXVK_D3D9_X32_SHA256='$dll_hash'
+DXVK_D3D11_X32_SIZE='3'
+DXVK_D3D11_X32_SHA256='$d3d11_hash'
+DXVK_DXGI_X32_SIZE='3'
+DXVK_DXGI_X32_SHA256='$dxgi_hash'
 EOF
 cat >"$tiny_state/install.env" <<EOF
 LFS_VERSION='$LFS_VERSION'
+LFS_CHANNEL='$LFS_CHANNEL'
 LFS_EXE_SHA256='$exe_hash'
 LFS_STOCK_MANIFEST_SHA256='$tiny_manifest_hash'
 DXVK_VERSION='$DXVK_VERSION'
-DXVK_D3D9_X32_SHA256='$dll_hash'
+DXVK_D3D11_X32_SHA256='$d3d11_hash'
+DXVK_DXGI_X32_SHA256='$dxgi_hash'
 WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'
 WINE_RUNTIME_MANIFEST_SHA256='$fake_wine_manifest_hash'
 WINE_VERSION='wine-11.15'

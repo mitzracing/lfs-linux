@@ -12,7 +12,7 @@ function baseValues(kind = "compatibility") {
     distribution: "Manjaro Linux",
     distributionVersion: "Manjaro 26.0",
     packageMethod: "source archive",
-    wrapperVersion: "0.1.6",
+    wrapperVersion: "0.2.0",
     desktop: "KDE Plasma 6 on X11",
     graphics: "NVIDIA RTX 3070, driver 580.82",
     details: "Setup completed and the game reached the main menu.",

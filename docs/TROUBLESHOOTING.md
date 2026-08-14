@@ -40,7 +40,7 @@ lfs-linux doctor
 
 Install a current Vulkan driver for the GPU. On Arch, select the matching `vulkan-driver` provider.
 
-The wrapper verifies both its private DXVK DLL and the prefix copy. Run `lfs-linux install` to repair a failed DXVK check.
+The wrapper verifies the private DXVK archive plus its D3D11 and DXGI prefix copies. Run `lfs-linux install` to repair a failed DXVK check.
 
 ## Missing audio
 
@@ -58,7 +58,7 @@ Every wrapper launch passes `/windowed=yes`. This gives a recoverable default wi
 
 ## Setup reports an incomplete stock tree
 
-The wrapper does not execute the NSIS installer under Wine. It extracts the verified official archive with 7-Zip and verifies every immutable stock file against the shipped 0.7G manifest. Player-owned settings, setups, layouts, replays, and similar paths are excluded from that immutable inventory and preserved during repair. If any stock file is absent or changed, diagnostics fail and `lfs-linux install` restores it from the verified archive before writing a new marker.
+The wrapper does not execute the NSIS installer under Wine. It extracts the verified official archive and its pinned nested payloads with 7-Zip, then verifies every immutable stock file against the shipped 0.8C19 manifest. Player-owned settings, setups, layouts, replays, AI knowledge cache, training content, and similar paths are excluded from that immutable inventory and preserved during repair. If any stock file is absent or changed, diagnostics fail and `lfs-linux install` restores it from the verified archive before writing a new marker.
 
 ## Upstream update detected
 
@@ -68,13 +68,17 @@ Run:
 lfs-linux update-check
 ```
 
-A review-required result is not an installation failure. It means maintainers must verify and release new pins.
+A review-required result exits with status 2. It identifies whether the official stable or new-graphics public-test channel changed and tells you to install a reviewed wrapper release. It is not an installation failure and does not alter the game.
 
 Do not bypass checksum checks. Do not patch `LFS.exe`.
 
+## Upgrade stops before changing the game
+
+Wrapper 0.2.0 upgrades only a complete, exact v0.1.6 LFS 0.7G immutable payload. It preserves files outside both immutable manifests and swaps the verified new tree atomically. A player file that collides with a newly added stock path is retained by content hash under `~/.local/share/lfs-linux/migration-conflicts/`. If the old stock payload drifted, repair it with immutable v0.1.6 first. If `LFS.exe` has an unknown digest, keep a backup and wait for a wrapper release that audits that exact upstream build. Do not delete or overwrite a self-updated tree.
+
 ## Wine runtime problem
 
-Wrapper 0.1.6 accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
+Wrapper 0.2.0 accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
 
 ```bash
 cp -a ~/.local/share/lfs-linux ~/lfs-linux-backup

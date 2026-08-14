@@ -17,23 +17,24 @@
 
 Update `share/lfs-linux/release.env` as one change:
 
-- LFS version
+- LFS version, channel, and public-test family (label public tests explicitly)
 - installer filename and URL
 - byte size
 - installer SHA-256
 - installed `LFS.exe` SHA-256 and byte size
-- the complete immutable stock manifest name, size, SHA-256 digest, and entry count
+- the complete runtime immutable manifest and complete extraction seed-manifest names, sizes, SHA-256 digests, and entry counts
 - required helmet, track, and vehicle asset paths, sizes, and SHA-256 digests
+- every nested archive's exact path, destination class, size, and SHA-256 digest
 - minimum extracted file count and byte size as secondary sanity checks
-- prior audited executable digest in `LFS_UPGRADE_FROM_SHA256S` for safe in-place upgrades
-- DXVK version, URL, size, archive SHA-256, and D3D9 DLL SHA-256 when applicable
+- prior audited executable digest, immutable predecessor migration manifest, and complete predecessor seed manifest; use the seed to distinguish untouched defaults from player changes
+- DXVK version, URL, size, archive SHA-256, and required 32-bit D3D11/DXGI DLL sizes and SHA-256 digests
 - exact Wine package version, immutable archive URL, size, SHA-256 digest, and complete runtime-manifest pins
 
-The wrapper extracts the verified NSIS archive with 7-Zip and does not execute the installer stub. Remove `$PLUGINSDIR` and `UninstallLFS.exe`, then regenerate the LFS manifest with `scripts/generate-payload-manifest.py lfs`. Extract the exact Wine package and regenerate its manifest with the `wine` profile. Review player-owned exclusions before accepting either manifest.
+The wrapper extracts the verified NSIS archive with 7-Zip and does not execute the installer stub. For 0.8, verify and extract every nested archive into its audited destination. Remove `$PLUGINSDIR`, `inst_tmp`, and `UninstallLFS.exe`, then regenerate the LFS manifest with `scripts/generate-payload-manifest.py lfs`. Extract the exact Wine package and regenerate its manifest with the `wine` profile. Review player-owned exclusions before accepting either manifest.
 
 Delete a randomly selected immutable file that is not one of the separately pinned representative files. Confirm `doctor` and `launch` fail, `install` restores its exact hash, and player-owned paths remain byte-identical. Perform the same drift-and-reprovision check on one non-entry-point Wine DLL.
 
-Then test an in-place upgrade from every digest listed in `LFS_UPGRADE_FROM_SHA256S`. Compare player-owned paths before and after the extraction merge, and confirm that the complete new stock tree passes validation. Remove a digest from the upgrade list when that path is no longer supported.
+Then test an in-place upgrade from every digest listed in `LFS_UPGRADE_FROM_SHA256S`. Require its complete immutable predecessor migration manifest, compare player-owned paths before and after the atomic swap, interrupt each swap state to prove recovery, and confirm that the complete new stock tree passes validation. Prove a changed predecessor stock file and an unknown/self-updated executable are rejected before game-tree mutation. Remove a digest and predecessor manifest when that path is no longer supported.
 
 Then run the full wrapper release procedure.
 
@@ -58,6 +59,6 @@ GitHub release publication and AUR submission require explicit owner approval.
 
 ## Rollback
 
-Revert the wrapper package to the last verified tag. Do not downgrade or overwrite game-owned user data automatically.
+Revert the wrapper package to the last verified tag. For the 0.8C19 public-test release, immutable v0.1.6 is the audited old-graphics 0.7G fallback. Do not downgrade or overwrite game-owned user data automatically; back up the XDG state tree and use a separate state directory for fallback validation.
 
-If an upstream game update is incompatible, keep the prior pin only while its official URL and terms remain valid. Clearly report that status.
+If an upstream public-test update is incompatible, keep the prior pin only while its official URL and terms remain valid. Clearly report that status and never call a public test stable.

@@ -2,7 +2,9 @@
 
 Unofficial community Linux launcher for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
 
-**Status:** v0.1.6 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+**Status:** v0.2.0 public-test source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+
+This release targets exact official **LFS 0.8C19 new graphics**, which lfs.net still labels **PUBLIC TEST**. It is not represented as a stable LFS release. Use immutable [v0.1.6](https://github.com/mitzracing/live-for-speed-linux/releases/tag/v0.1.6) for the audited old-graphics 0.7G fallback.
 
 This project is not affiliated with or endorsed by the Live for Speed developers.
 
@@ -13,9 +15,9 @@ The public package is `live-for-speed-linux`. The stable command and player-stat
 ## What it does
 
 - Downloads LFS directly from `lfs.net` after an explicit user command.
-- Verifies the official archive, extracts it without executing the installer, and checks every immutable stock file.
+- Verifies the official archive and all 52 nested archives, extracts without executing the installer, checks every official seed file, then tracks immutable stock separately from mutable player data.
 - Creates one private Wine prefix and uses only audited Wine 11.15-1 under the XDG data directory.
-- Deploys only DXVK's 32-bit D3D9 DLL for the stock game.
+- Deploys only DXVK's audited 32-bit D3D11 and DXGI DLLs required by LFS 0.8C19.
 - Starts Wine directly with no wrapper daemon or container.
 - Preserves game-owned settings, profiles, replays, unlock state, and cache.
 - Detects official download-page changes without editing game files.
@@ -31,9 +33,9 @@ The public package is `live-for-speed-linux`. The stable command and player-stat
 
 ## One-click setup
 
-After installing the wrapper package, open **Live for Speed Linux** from the application menu. First launch shows one informed confirmation, verifies the official LFS, Wine, and DXVK inputs, configures the private prefix, and starts LFS. Later launches go directly to the game.
+After installing the wrapper package, open **Live for Speed Linux** from the application menu. First launch explains that LFS 0.8C19 is a public test, shows the approximately 1.7 GB official download, verifies the LFS, Wine, and DXVK inputs, configures the private prefix, and starts LFS. Later launches go directly to the game.
 
-No game payload is bundled with the wrapper package.
+No game payload is bundled with the wrapper package. Immutable [v0.1.6](https://github.com/mitzracing/live-for-speed-linux/releases/tag/v0.1.6) remains available as the audited old-graphics LFS 0.7G fallback.
 
 ## Commands
 
@@ -92,7 +94,7 @@ Contributors do not need game source, a private build server, or a full-time ser
 ## Low-overhead architecture
 
 ```text
-lfs-linux -> audited Wine 11.15-1 -> stock LFS.exe -> private DXVK d3d9 -> host Vulkan driver
+lfs-linux -> audited Wine 11.15-1 -> stock LFS.exe -> private DXVK d3d11/dxgi -> host Vulkan driver
 ```
 
 No Bottles process, Steam client, Gamescope session, web UI, or update request exists in the hot path. Shader cache persists between launches.
@@ -107,9 +109,9 @@ Run:
 lfs-linux update-check
 ```
 
-A changed official release returns a review-required status. It does not modify LFS.
+The command reports the official stable and public-test/new-graphics channels separately. A newer public test or changed installer returns status 2 with an actionable wrapper-update message. It never modifies LFS.
 
-Maintainers update all release pins together after a clean install and live run. See [`docs/RELEASING.md`](docs/RELEASING.md).
+There is no background checker in the launch path. The weekly repository drift workflow alerts maintainers; users receive the reviewed wrapper update through the package channel. Maintainers update all release pins together after a clean install and live run. See [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Flathub
 

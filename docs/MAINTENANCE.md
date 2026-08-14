@@ -12,12 +12,12 @@ Normal wrapper changes must fit one of these small units:
 - one focused test
 - one documentation correction
 
-A normal LFS update changes audited manifest fields, regenerates the immutable stock-file manifest, adds the prior executable digest to the approved upgrade list, and runs the clean-install plus in-place-upgrade checks. A Wine update similarly regenerates its complete runtime manifest. Neither path requires editing game assets or reverse engineering the executable.
+A normal LFS update changes audited outer and nested payload fields, regenerates the immutable stock-file manifest, records the prior executable digest plus complete immutable predecessor migration and full seed manifests, and runs clean-install, repair, atomic migration, interruption-recovery, and unknown-self-update checks. A Wine update similarly regenerates its complete runtime manifest. Neither path requires editing game assets or reverse engineering the executable.
 
 ## Stable interfaces
 
 - `share/lfs-linux/release.env` owns audited versions, archives, and manifest digests.
-- `share/lfs-linux/*.manifest` owns the complete immutable game and Wine inventories.
+- `share/lfs-linux/*.manifest` owns complete extraction seeds, immutable game inventories, predecessor migration references, and the Wine inventory.
 - `libexec/lfs-linux-core` owns prefix lifecycle and launch behavior.
 - `bin/lfs-linux` only locates and delegates to the core.
 - `bin/lfs-linux-desktop` owns first-run terminal selection and then replaces itself with the CLI launcher.
@@ -54,5 +54,6 @@ Stop and redesign only if one of these changes occurs:
 - the pinned Arch Wine package disappears from the immutable archive or drops required PE32 behavior
 - upstream grants official Flatpak participation
 - LFS changes its data layout in a way that threatens player data
+- the public-test updater changes stock files without a distinct executable digest
 
 Until then, prefer small manifest or shell patches.
