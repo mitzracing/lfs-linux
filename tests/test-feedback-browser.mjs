@@ -121,6 +121,8 @@ try {
 
   const evaluated = await client.send("Runtime.evaluate", {
     expression: `(() => {
+      const disclosure = document.getElementById('feedback-disclosure');
+      const wasCollapsed = !disclosure.open;
       document.querySelector('[data-feedback-kind="compatibility"]').click();
       const form = document.getElementById('feedback-form');
       const set = (name, value) => { form.elements[name].value = value; };
@@ -139,6 +141,8 @@ try {
       form.requestSubmit();
       const result = document.getElementById('feedback-result');
       return {
+        wasCollapsed,
+        disclosureOpen: disclosure.open,
         hidden: result.hidden,
         href: document.getElementById('github-handoff').href,
         status: document.getElementById('feedback-status').textContent,
@@ -150,6 +154,8 @@ try {
     returnByValue: true,
   });
   const outcome = evaluated.result.value;
+  assert.equal(outcome.wasCollapsed, true);
+  assert.equal(outcome.disclosureOpen, true);
   assert.equal(outcome.hidden, false);
   assert.match(outcome.status, /Removed before handoff/);
   assert.equal(outcome.activeId, "github-handoff");
@@ -177,7 +183,20 @@ try {
     assert.ok(!outcome.diagnostics.includes(privateValue), `form retained ${privateValue}`);
   }
 
-  console.log("[PASS] real browser exercises website entry, client sanitization, and schema-complete GitHub handoff");
+  const collapsed = await client.send("Runtime.evaluate", {
+    expression: `(() => {
+      document.getElementById('collapse-feedback').click();
+      return {
+        open: document.getElementById('feedback-disclosure').open,
+        focusedTag: document.activeElement.tagName,
+      };
+    })()`,
+    returnByValue: true,
+  });
+  assert.equal(collapsed.result.value.open, false);
+  assert.equal(collapsed.result.value.focusedTag, "SUMMARY");
+
+  console.log("[PASS] real browser exercises collapsed entry, sanitization, GitHub handoff, and keyboard-safe collapse");
 } finally {
   if (client) client.close();
   browser.kill("SIGTERM");

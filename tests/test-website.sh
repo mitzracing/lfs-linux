@@ -48,8 +48,9 @@ assert audit.title == 1, audit.title
 assert audit.viewport == 1, audit.viewport
 assert audit.scripts == ["feedback.js"], audit.scripts
 assert set(audit.images) == {"icon.svg"}, audit.images
-assert {"top", "install", "support", "trust", "feedback-form", "feedback-result", "github-handoff"} <= audit.ids, audit.ids
+assert {"top", "install", "support", "trust", "feedback-disclosure", "feedback-form", "feedback-result", "github-handoff", "collapse-feedback"} <= audit.ids, audit.ids
 assert {"kind", "summary", "distribution", "distributionVersion", "packageMethod", "wrapperVersion", "desktop", "graphics", "details", "expected", "steps", "value", "diagnostics", "safety"} <= audit.form_fields, audit.form_fields
+assert '<details id="feedback-disclosure" class="feedback-disclosure">' in text
 assert 'action="#support"' in text
 assert 'name="' not in text[text.index('<form id="feedback-form"'):text.index('</form>', text.index('<form id="feedback-form"'))]
 assert all(link.startswith(("#", "https://")) for link in audit.links), audit.links

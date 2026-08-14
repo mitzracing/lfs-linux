@@ -115,24 +115,30 @@
           <p class="support-lede">Describe what happened here. The browser removes known private-data patterns, then opens the matching GitHub form with your text filled in. Nothing is sent until you review and submit on GitHub.</p>
 
           <div class="support-grid" aria-label="Choose a report type">
-            <button class="support-card" type="button" data-feedback-kind="bug">
+            <button class="support-card" type="button" data-feedback-kind="bug" aria-controls="feedback-disclosure" aria-expanded="false">
               <strong>Something broke</strong>
               <span>Report a game or launcher problem</span>
             </button>
-            <button class="support-card" type="button" data-feedback-kind="compatibility">
+            <button class="support-card" type="button" data-feedback-kind="compatibility" aria-controls="feedback-disclosure" aria-expanded="false">
               <strong>Different distribution</strong>
               <span>Share compatibility results</span>
             </button>
-            <button class="support-card" type="button" data-feedback-kind="feature">
+            <button class="support-card" type="button" data-feedback-kind="feature" aria-controls="feedback-disclosure" aria-expanded="false">
               <strong>Suggest an improvement</strong>
               <span>Explain the player problem first</span>
             </button>
-            <button class="support-card" type="button" data-feedback-kind="feedback">
+            <button class="support-card" type="button" data-feedback-kind="feedback" aria-controls="feedback-disclosure" aria-expanded="false">
               <strong>Share your experience</strong>
               <span>Tell us what worked or confused you</span>
             </button>
           </div>
 
+          <details id="feedback-disclosure" class="feedback-disclosure">
+            <summary>
+              <strong id="feedback-summary-label">Write a report</strong>
+              <span>Open only when you need it</span>
+            </summary>
+            <div class="feedback-shell">
           <form id="feedback-form" class="feedback-form" action="#support">
             <div class="form-grid">
               <label>
@@ -206,7 +212,10 @@
               <input type="checkbox" id="safety" value="confirmed" required>
               I understand the report is public. I will review the sanitized text and will not add passwords, unlock data, registry files, proprietary files, or private logs on GitHub.
             </label>
-            <button class="button blue prepare-button" type="submit">Prepare GitHub handoff</button>
+            <div class="form-actions">
+              <button class="button blue prepare-button" type="submit">Prepare GitHub handoff</button>
+              <button id="collapse-feedback" class="collapse-button" type="button">Collapse form</button>
+            </div>
           </form>
 
           <div id="feedback-result" class="feedback-result" aria-live="polite" hidden>
@@ -217,6 +226,8 @@
               <pre id="report-preview"></pre>
             </details>
           </div>
+            </div>
+          </details>
 
           <p class="direct-forms">Prefer to start on GitHub? Use the direct <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=bug.yml">problem</a>, <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=compatibility.yml">compatibility</a>, <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feature.yml">improvement</a>, or <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feedback.yml">experience</a> form.</p>
           <noscript><p class="publication">JavaScript is disabled. Use one of the direct GitHub forms above and remove private data yourself.</p></noscript>

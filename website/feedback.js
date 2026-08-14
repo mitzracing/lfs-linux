@@ -253,18 +253,46 @@
     const status = documentObject.getElementById("feedback-status");
     const handoff = documentObject.getElementById("github-handoff");
     const preview = documentObject.getElementById("report-preview");
+    const disclosure = documentObject.getElementById("feedback-disclosure");
+    const summaryLabel = documentObject.getElementById("feedback-summary-label");
+    const collapseButton = documentObject.getElementById("collapse-feedback");
+    const kindLabels = {
+      bug: "Report something broken",
+      compatibility: "Report distribution compatibility",
+      feature: "Suggest an improvement",
+      feedback: "Share your experience",
+    };
+
+    function updateDisclosureState() {
+      for (const button of documentObject.querySelectorAll("[data-feedback-kind]")) {
+        button.setAttribute("aria-expanded", String(disclosure.open));
+      }
+    }
 
     function selectKind(kind) {
       form.elements.kind.value = kind;
+      summaryLabel.textContent = kindLabels[kind];
+      disclosure.open = true;
       setConditionalRequirements(form, kind);
+      updateDisclosureState();
       form.elements.summary.focus();
     }
 
     for (const button of documentObject.querySelectorAll("[data-feedback-kind]")) {
       button.addEventListener("click", () => selectKind(button.dataset.feedbackKind));
     }
-    form.elements.kind.addEventListener("change", () => setConditionalRequirements(form, form.elements.kind.value));
+    disclosure.addEventListener("toggle", updateDisclosureState);
+    collapseButton.addEventListener("click", () => {
+      disclosure.open = false;
+      disclosure.querySelector("summary").focus();
+    });
+    form.elements.kind.addEventListener("change", () => {
+      const kind = form.elements.kind.value;
+      summaryLabel.textContent = kindLabels[kind];
+      setConditionalRequirements(form, kind);
+    });
     setConditionalRequirements(form, form.elements.kind.value);
+    updateDisclosureState();
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
