@@ -6,7 +6,8 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly ROOT_DIR
 VERSION="$(<"$ROOT_DIR/VERSION")"
 readonly VERSION
-readonly ARCHIVE_NAME="lfs-linux-$VERSION.tar.gz"
+readonly PROJECT_SLUG='live-for-speed-linux-launcher'
+readonly ARCHIVE_NAME="$PROJECT_SLUG-$VERSION.tar.gz"
 readonly OUTPUT_DIR="${1:-$ROOT_DIR/dist}"
 readonly SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-1786665600}"
 readonly -a ENTRIES=(
@@ -36,7 +37,7 @@ rm -f "$OUTPUT_DIR/$ARCHIVE_NAME"
     --owner=0 \
     --group=0 \
     --numeric-owner \
-    --transform="s,^,lfs-linux-$VERSION/," \
+    --transform="s,^,$PROJECT_SLUG-$VERSION/," \
     -cf - "${ENTRIES[@]}" |
     gzip -n -9 >"$OUTPUT_DIR/$ARCHIVE_NAME"
 )

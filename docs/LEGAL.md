@@ -1,6 +1,6 @@
 # Legal and Upstream Boundary
 
-`lfs-linux` is an independent community wrapper. It is not affiliated with or endorsed by the Live for Speed developers.
+Live for Speed Linux Launcher is an independent community wrapper. It is not affiliated with or endorsed by the Live for Speed developers.
 
 ## What this repository distributes
 
@@ -32,7 +32,7 @@ The wrapper deploys only the 32-bit `d3d9.dll` required by LFS 0.7G. It does not
 
 ## Names and trademarks
 
-Live for Speed and LFS can be trademarks or identifiers of their respective owners. The package name describes compatibility and does not imply endorsement.
+Live for Speed and LFS can be trademarks or identifiers of their respective owners. The project name describes compatibility and does not imply endorsement.
 
 The community icon is original. It does not copy the official LFS logo.
 

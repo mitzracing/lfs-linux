@@ -5,7 +5,7 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly ROOT_DIR
 VERSION="$(<"$ROOT_DIR/VERSION")"
 readonly VERSION
-ARCHIVE_ROOT="lfs-linux-$VERSION"
+ARCHIVE_ROOT="live-for-speed-linux-launcher-$VERSION"
 readonly ARCHIVE_ROOT
 TMP_ROOT="$(mktemp -d /tmp/lfs-linux-release.XXXXXX)"
 readonly TMP_ROOT

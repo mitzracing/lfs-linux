@@ -509,7 +509,7 @@ setup_interactive() {
   wine_mib=$(( (WINE_PACKAGE_SIZE + 1048575) / 1048576 ))
   dxvk_mib=$(( (DXVK_ARCHIVE_SIZE + 1048575) / 1048576 ))
   cat <<EOF
-LFS Linux first-run setup
+Live for Speed Linux Launcher first-run setup
 
 This separate community launcher will:
   1. Download the official LFS $LFS_VERSION installer from lfs.net ($lfs_mib MiB).
@@ -823,7 +823,7 @@ remove_state() {
   game_is_running && die 'LFS is running; run lfs-linux stop first'
   if [[ "${LFS_LINUX_CONFIRM_REMOVE:-0}" != '1' ]]; then
     [[ -t 0 ]] || die 'removal needs a terminal or LFS_LINUX_CONFIRM_REMOVE=1'
-    printf 'Remove the complete LFS Linux prefix and game-owned player data at %s? [y/N] ' "$STATE_ROOT"
+    printf 'Remove the complete Live for Speed Linux Launcher prefix and game-owned player data at %s? [y/N] ' "$STATE_ROOT"
     read -r answer
     [[ "$answer" == 'y' || "$answer" == 'Y' ]] || { note 'Removal cancelled'; return; }
   fi

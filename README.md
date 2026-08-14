@@ -1,12 +1,14 @@
-# LFS Linux
+# Live for Speed Linux Launcher
 
-Community-maintained Linux wrapper for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
+Unofficial community Linux launcher for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
 
-**Status:** v0.1.1 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+**Status:** v0.1.2 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
 
 This project is not affiliated with or endorsed by the Live for Speed developers.
 
-Project website: <https://mitzracing.github.io/lfs-linux/>
+Project website: <https://mitzracing.github.io/live-for-speed-linux-launcher/>
+
+The public package is `live-for-speed-launcher`. The stable command and player-state paths keep the `lfs-linux` name for compatibility.
 
 ## What it does
 
@@ -29,7 +31,7 @@ Project website: <https://mitzracing.github.io/lfs-linux/>
 
 ## One-click setup
 
-After installing the wrapper package, open **LFS Linux** from the application menu. First launch shows one informed confirmation, verifies the official LFS, Wine, and DXVK inputs, configures the private prefix, and starts LFS. Later launches go directly to the game.
+After installing the wrapper package, open **Live for Speed Linux Launcher** from the application menu. First launch shows one informed confirmation, verifies the official LFS, Wine, and DXVK inputs, configures the private prefix, and starts LFS. Later launches go directly to the game.
 
 No game payload is bundled with the wrapper package.
 
@@ -71,7 +73,7 @@ System installation needs root because it writes under `/usr`. Game installation
 
 ## Arch and Manjaro
 
-A publish-ready package recipe is in [`packaging/aur/`](packaging/aur/README.md). After publication, Pamac users can find `lfs-linux` when AUR support is enabled.
+A publish-ready package recipe is in [`packaging/aur/`](packaging/aur/README.md). After publication, Pamac users can find `live-for-speed-launcher` when AUR support is enabled.
 
 The AUR package contains only this open-source wrapper. It does not contain the game installer or game files.
 
@@ -79,7 +81,7 @@ The AUR package contains only this open-source wrapper. It does not contain the 
 
 The core uses standard shell tools and a native Wine runtime. Distribution packages install files from `Makefile`; they must provide exact Wine 11.15-1 or allow the wrapper to provision the pinned archived package privately.
 
-Do not use `lfs-linux` as the package name for Linux From Scratch documentation packages in repositories where that name conflicts.
+The full package name avoids confusion with Linux From Scratch. Existing scripts can continue to use the `lfs-linux` command.
 
 ## Separate launcher, small patches
 

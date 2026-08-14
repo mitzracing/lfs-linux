@@ -1,13 +1,13 @@
 post_install() {
   printf '%s\n' \
-    'LFS Linux installed the open-source wrapper only.' \
-    'Open LFS Linux from the application menu for one-time verified setup.' \
+    'Live for Speed Linux Launcher installed the open-source wrapper only.' \
+    'Open Live for Speed Linux Launcher for one-time verified setup.' \
     'CLI alternative: lfs-linux setup'
 }
 
 post_upgrade() {
   printf '%s\n' \
-    'LFS Linux wrapper upgraded; player data was preserved.' \
+    'Live for Speed Linux Launcher upgraded; player data was preserved.' \
     'The next application launch offers setup only when audited pins or Wine changed.'
 }
 

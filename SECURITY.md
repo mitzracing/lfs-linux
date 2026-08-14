@@ -2,13 +2,13 @@
 
 ## Supported versions
 
-Only the latest `lfs-linux` release receives security fixes.
+Only the latest Live for Speed Linux Launcher release receives security fixes.
 
 ## Report a vulnerability
 
 Do not open a public issue for a vulnerability that exposes credentials, account data, arbitrary code execution, or unsafe update behavior.
 
-Contact the maintainers through [GitHub private vulnerability reporting](https://github.com/mitzracing/lfs-linux/security/advisories/new). Do not publish sensitive proof data.
+Contact the maintainers through [GitHub private vulnerability reporting](https://github.com/mitzracing/live-for-speed-linux-launcher/security/advisories/new). Do not publish sensitive proof data.
 
 Include:
 

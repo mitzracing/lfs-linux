@@ -1,10 +1,13 @@
-pkgname=lfs-linux
-pkgver=0.1.1
+pkgname=live-for-speed-launcher
+pkgver=0.1.2
 pkgrel=1
-pkgdesc='Community Linux launcher for the official Live for Speed build'
+pkgdesc='Unofficial community Linux launcher for Live for Speed'
 arch=('x86_64')
-url='https://github.com/mitzracing/lfs-linux'
+url='https://github.com/mitzracing/live-for-speed-linux-launcher'
 license=('MIT')
+provides=('lfs-linux')
+conflicts=('lfs-linux')
+replaces=('lfs-linux')
 depends=(
   '7zip'
   'bash'
@@ -30,11 +33,12 @@ optdepends=(
   'vulkan-tools: detailed Vulkan diagnostics'
   'wmctrl: focus an existing LFS window'
 )
-install=lfs-linux.install
-source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('7d555a069a9fbbe5ff2c1626b941fe20d86d7da7748dda427ea92f1c4560b82a')
+install=live-for-speed-launcher.install
+_source_name='live-for-speed-linux-launcher'
+source=("$_source_name-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_source_name-$pkgver.tar.gz")
+sha256sums=('d929eb83fa3e7fab4479dfabb30714fd2a6725e888ee104f39062b0732f52bde')
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver"
+  cd "$srcdir/$_source_name-$pkgver"
   make DESTDIR="$pkgdir" PREFIX=/usr install
 }

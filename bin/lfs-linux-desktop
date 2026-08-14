@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly PROGRAM_NAME='LFS Linux'
+readonly PROGRAM_NAME='Live for Speed Linux Launcher'
 SELF_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly SELF_DIR
 readonly LFS_COMMAND="${LFS_LINUX_COMMAND:-$SELF_DIR/lfs-linux}"

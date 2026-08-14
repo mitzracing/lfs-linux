@@ -11,10 +11,10 @@ for path in \
   usr/share/lfs-linux/release.env \
   usr/share/lfs-linux/lfs-0.7G-stock.manifest \
   usr/share/lfs-linux/wine-11.15-1-runtime.manifest \
-  usr/share/applications/io.github.mitzracing.lfs_linux.desktop \
-  usr/share/metainfo/io.github.mitzracing.lfs_linux.metainfo.xml \
-  usr/share/icons/hicolor/scalable/apps/io.github.mitzracing.lfs_linux.svg \
-  usr/share/licenses/lfs-linux/LICENSE; do
+  usr/share/applications/io.github.mitzracing.live_for_speed_linux_launcher.desktop \
+  usr/share/metainfo/io.github.mitzracing.live_for_speed_linux_launcher.metainfo.xml \
+  usr/share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux_launcher.svg \
+  usr/share/licenses/live-for-speed-launcher/LICENSE; do
   [[ -e "$ROOT/$path" ]] || { printf 'missing package file: %s\n' "$path" >&2; exit 1; }
 done
 
