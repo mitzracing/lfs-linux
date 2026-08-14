@@ -39,6 +39,9 @@ rm -f "$OUTPUT_DIR/$ARCHIVE_NAME"
     --owner=0 \
     --group=0 \
     --numeric-owner \
+    --exclude='__pycache__' \
+    --exclude='*/__pycache__' \
+    --exclude='*.py[co]' \
     --transform="s,^,$PROJECT_SLUG-$VERSION/," \
     -cf - "${ENTRIES[@]}" |
     gzip -n -9 >"$OUTPUT_DIR/$ARCHIVE_NAME"

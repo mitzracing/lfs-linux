@@ -28,8 +28,8 @@ listing="$(tar -tzf "$archive_one")"
 grep -Fq "$ARCHIVE_ROOT/bin/lfs-linux" <<<"$listing"
 grep -Fq "$ARCHIVE_ROOT/bin/lfs-linux-desktop" <<<"$listing"
 grep -Fq "$ARCHIVE_ROOT/libexec/lfs-linux-core" <<<"$listing"
-if grep -Eq '(^|/)(legacy|artifacts|\.pi-glla)(/|$)' <<<"$listing"; then
-  printf 'local evidence entered release archive\n' >&2
+if grep -Eq '(^|/)(legacy|artifacts|\.pi-glla|__pycache__)(/|$)|\.py[co]$' <<<"$listing"; then
+  printf 'local evidence or generated Python bytecode entered release archive\n' >&2
   exit 1
 fi
 if grep -Ei '\.(exe|dll|msi|png)$' <<<"$listing"; then
