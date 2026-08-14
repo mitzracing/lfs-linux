@@ -34,6 +34,6 @@ pkgbase = live-for-speed-linux
 	replaces = lfs-linux
 	replaces = live-for-speed-launcher
 	source = live-for-speed-linux-0.1.6.tar.gz::https://github.com/mitzracing/live-for-speed-linux/releases/download/v0.1.6/live-for-speed-linux-0.1.6.tar.gz
-	sha256sums = a6061463befd816e09ee42b4efe16762f73f2efa79c5abf5b05fc0339b7387a1
+	sha256sums = 0643e9d201326249a88b7ebc87a6a119102cbc438c58dbc8816ec666f37db3cf
 
 pkgname = live-for-speed-linux

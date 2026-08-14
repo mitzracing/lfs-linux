@@ -229,7 +229,7 @@ import json
 import sys
 print(json.dumps({
     "base_tree": sys.argv[1],
-    "tree": [{"path": ".github/e2e-support-flow.txt", "mode": "100644", "type": "blob", "sha": sys.argv[2]}],
+    "tree": [{"path": "artifacts/e2e-support-flow.txt", "mode": "100644", "type": "blob", "sha": sys.argv[2]}],
 }))
 PY
 tree_sha="$(gh api --method POST "repos/$REPOSITORY/git/trees" --input "$TMP_ROOT/tree.json" --jq '.sha')"
