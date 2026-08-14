@@ -1,0 +1,76 @@
+# Contributing
+
+Thank you for improving Linux support for Live for Speed.
+
+## Boundaries
+
+Contributions can change the wrapper, package metadata, tests, and documentation.
+
+Do not commit:
+
+- Live for Speed binaries or proprietary assets
+- modified cars, tracks, shaders, textures, or executables
+- account names, passwords, unlock codes, or private logs
+- copied official logos without written permission
+- a Flathub submission manifest without upstream authorization
+
+## Development setup
+
+Run static checks:
+
+```bash
+make test
+```
+
+Run a disposable install with explicit XDG directories:
+
+```bash
+export LFS_LINUX_STATE_DIR=/tmp/lfs-linux-test/state
+export LFS_LINUX_CACHE_DIR=/tmp/lfs-linux-test/cache
+export LFS_LINUX_LOG_DIR=/tmp/lfs-linux-test/log
+LFS_LINUX_DATA_DIR="$PWD/share/lfs-linux" \
+LFS_LINUX_LIBEXEC_DIR="$PWD/libexec" \
+./bin/lfs-linux install
+```
+
+## Workspace GUI display
+
+Maintainer release evidence uses an isolated Xephyr display `:111`. Start the local nested X server, then set:
+
+```bash
+export DISPLAY=:111
+export XAUTHORITY="$XDG_RUNTIME_DIR/xephyr-111-desktop/Xauthority"
+```
+
+Contributors can use another isolated display when `:111` is unavailable, but must record it in test evidence. Do not use nested-display frame rates as native performance evidence.
+
+## Change process
+
+1. Explain the user problem.
+2. Keep the stock-game boundary.
+3. Add a focused regression check.
+4. Run `make test`.
+5. Run `lfs-linux doctor`.
+6. For setup changes, test application-menu first run and direct later launch.
+7. For runtime changes, perform a clean install and GUI launch on the configured isolated display.
+8. Record exact commands and proof limits.
+
+## Release-pin changes
+
+A pin update requires:
+
+- official source URL
+- byte size
+- SHA-256 digest
+- clean prefix install
+- stock `LFS.exe` digest
+- DXVK initialization evidence
+- audio stream evidence
+- clean exit
+- updated release notes
+
+Do not auto-merge game or runtime pin updates.
+
+## Issue reports
+
+Attach the latest wrapper log only after you inspect it for personal data. Never attach Wine registry files or LFS unlock data.

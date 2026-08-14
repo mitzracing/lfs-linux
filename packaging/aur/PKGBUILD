@@ -1,0 +1,40 @@
+pkgname=lfs-linux
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Community Linux launcher for the official Live for Speed build'
+arch=('x86_64')
+url='https://github.com/mitzracing/lfs-linux'
+license=('MIT')
+depends=(
+  '7zip'
+  'bash'
+  'coreutils'
+  'curl'
+  'desktop-file-utils'
+  'findutils'
+  'gawk'
+  'grep'
+  'libarchive'
+  'libpulse'
+  'sed'
+  'tar'
+  'util-linux'
+  'vulkan-icd-loader'
+  'vulkan-driver'
+  'wine=11.15-1'
+  'xdotool'
+  'xterm'
+)
+optdepends=(
+  'libnotify: desktop launch error notifications'
+  'vulkan-tools: detailed Vulkan diagnostics'
+  'wmctrl: focus an existing LFS window'
+)
+install=lfs-linux.install
+source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('8419ac3f6d5b2840910ecd2154030cdfa2414fbeccca26536565d0a10e87d48a')
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  make DESTDIR="$pkgdir" PREFIX=/usr install
+}

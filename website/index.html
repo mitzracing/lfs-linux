@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LFS Linux is a small community launcher that installs and runs the untouched official Live for Speed build with Wine and DXVK.">
+  <title>LFS Linux — one verified setup, direct later launches</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="LFS Linux home">
+      <img src="icon.svg" width="42" height="42" alt="">
+      <span>LFS Linux</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#install">Install</a>
+      <a href="#trust">Trust</a>
+      <a href="https://github.com/mitzracing/lfs-linux">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <p class="eyebrow">Unofficial community launcher · Linux x86_64</p>
+      <h1>One verified setup.<br>Direct launches after that.</h1>
+      <p class="lede">Install the wrapper, click LFS Linux, confirm once, and play. It downloads the official game from lfs.net, verifies every pinned input, configures a private Wine prefix and DXVK, then gets out of the way.</p>
+      <div class="actions">
+        <a class="button primary" href="#install">Install on Arch or Manjaro</a>
+        <a class="button" href="https://github.com/mitzracing/lfs-linux">Read the source</a>
+      </div>
+      <p class="boundary">No game binaries, official logos, unlock tools, or modified assets are distributed by this project.</p>
+    </section>
+
+    <section class="metrics" aria-label="Key properties">
+      <article><strong>0</strong><span>wrapper daemons</span></article>
+      <article><strong>1</strong><span>private prefix</span></article>
+      <article><strong>SHA-256</strong><span>pinned inputs</span></article>
+      <article><strong>Stock</strong><span>game files</span></article>
+    </section>
+
+    <section class="section" id="install">
+      <div class="section-heading">
+        <p class="eyebrow">Arch / Manjaro</p>
+        <h2>Simple first run</h2>
+      </div>
+      <ol class="steps">
+        <li><span>01</span><div><h3>Install the wrapper</h3><pre><code>yay -S lfs-linux</code></pre><p>Pamac can show the package when AUR support is enabled.</p></div></li>
+        <li><span>02</span><div><h3>Open LFS Linux</h3><p>The first run states download sizes, sources, install path, and legal boundary before asking for confirmation.</p></div></li>
+        <li><span>03</span><div><h3>Play</h3><p>Later clicks take the short path: launcher → audited Wine 11.15-1 → stock LFS.exe → private DXVK → Vulkan driver.</p></div></li>
+      </ol>
+      <p class="status"><strong>Publication status:</strong> v0.1.0 source is public. The package recipe is locally validated; its maintainer publishes the separate AUR listing.</p>
+    </section>
+
+    <section class="section split" id="trust">
+      <div>
+        <p class="eyebrow">Fail closed</p>
+        <h2>Small enough to audit</h2>
+        <p>The wrapper is Bash, desktop metadata, and documentation. A single release manifest records exact versions, byte sizes, hashes, and complete extracted-tree postconditions.</p>
+      </div>
+      <ul class="checks">
+        <li>Official LFS installer downloaded only after user confirmation</li>
+        <li>Exact Wine 11.15-1 archive and every runtime file verified</li>
+        <li>Every immutable stock game file checked before launch</li>
+        <li>Official DXVK archive with a private 32-bit D3D9 DLL</li>
+        <li>No update network request in the launch hot path</li>
+        <li>Unexpected executable or runtime drift blocks launch</li>
+        <li>Package removal preserves player data by default</li>
+        <li>Destructive removal requires explicit confirmation</li>
+      </ul>
+    </section>
+
+    <section class="section split">
+      <div>
+        <p class="eyebrow">Low maintenance</p>
+        <h2>A launcher, not a fork</h2>
+      </div>
+      <div>
+        <p>Normal changes are one manifest update, one compatibility patch, or one metadata edit. Contributors do not need game source, proprietary SDKs, or a permanent service.</p>
+        <p><a class="text-link" href="https://github.com/mitzracing/lfs-linux/blob/main/CONTRIBUTING.md">Contribution guide →</a></p>
+      </div>
+    </section>
+
+    <section class="notice">
+      <h2>Flathub is intentionally gated</h2>
+      <p>Flathub accepts Wine-based Windows applications only as official upstream submissions. This project will prepare no submission until the Live for Speed developers authorize and participate in it.</p>
+      <a class="text-link" href="https://github.com/mitzracing/lfs-linux/blob/main/docs/FLATHUB.md">Read the proposal gate →</a>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>LFS Linux</strong> is independent community software under the MIT license.</p>
+    <p>Live for Speed is proprietary software owned by its developers. This project is not affiliated with or endorsed by them. <a href="https://www.lfs.net/">Official LFS website</a>.</p>
+  </footer>
+</body>
+</html>

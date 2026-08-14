@@ -1,0 +1,38 @@
+PREFIX ?= /usr
+DESTDIR ?=
+
+BINDIR := $(DESTDIR)$(PREFIX)/bin
+LIBEXECDIR := $(DESTDIR)$(PREFIX)/lib/lfs-linux
+DATADIR := $(DESTDIR)$(PREFIX)/share
+
+.PHONY: install test package-check release-archive
+
+install:
+	install -Dm755 bin/lfs-linux $(BINDIR)/lfs-linux
+	install -Dm755 bin/lfs-linux-desktop $(BINDIR)/lfs-linux-desktop
+	install -Dm755 libexec/lfs-linux-core $(LIBEXECDIR)/lfs-linux-core
+	install -Dm644 share/lfs-linux/release.env $(DATADIR)/lfs-linux/release.env
+	install -Dm644 share/lfs-linux/lfs-0.7G-stock.manifest $(DATADIR)/lfs-linux/lfs-0.7G-stock.manifest
+	install -Dm644 share/lfs-linux/wine-11.15-1-runtime.manifest $(DATADIR)/lfs-linux/wine-11.15-1-runtime.manifest
+	install -Dm644 share/applications/io.github.mitzracing.lfs_linux.desktop $(DATADIR)/applications/io.github.mitzracing.lfs_linux.desktop
+	install -Dm644 share/metainfo/io.github.mitzracing.lfs_linux.metainfo.xml $(DATADIR)/metainfo/io.github.mitzracing.lfs_linux.metainfo.xml
+	install -Dm644 share/icons/hicolor/scalable/apps/io.github.mitzracing.lfs_linux.svg $(DATADIR)/icons/hicolor/scalable/apps/io.github.mitzracing.lfs_linux.svg
+	install -Dm644 LICENSE $(DATADIR)/licenses/lfs-linux/LICENSE
+	install -Dm644 docs/LEGAL.md $(DATADIR)/doc/lfs-linux/LEGAL.md
+	install -Dm644 docs/TROUBLESHOOTING.md $(DATADIR)/doc/lfs-linux/TROUBLESHOOTING.md
+	install -Dm644 docs/ARCHITECTURE.md $(DATADIR)/doc/lfs-linux/ARCHITECTURE.md
+	install -Dm644 docs/MAINTENANCE.md $(DATADIR)/doc/lfs-linux/MAINTENANCE.md
+
+test:
+	./tests/test-public-static.sh
+	./tests/test-public-core.sh
+	./tests/test-website.sh
+	./tests/test-release-archive.sh
+
+package-check:
+	rm -rf artifacts/pkgroot
+	$(MAKE) DESTDIR=$(CURDIR)/artifacts/pkgroot PREFIX=/usr install
+	./tests/test-package-boundary.sh artifacts/pkgroot
+
+release-archive:
+	./scripts/build-release-archive.sh

@@ -1,0 +1,23 @@
+[Desktop Entry]
+Type=Application
+Name=LFS Linux
+GenericName=Racing Simulator Launcher
+Comment=Install and run the official Live for Speed build on Linux
+Exec=lfs-linux-desktop launch
+TryExec=lfs-linux-desktop
+Icon=io.github.mitzracing.lfs_linux
+Terminal=false
+StartupNotify=true
+StartupWMClass=lfs.exe
+Categories=Game;Simulation;
+Keywords=racing;simulator;wine;LFS;
+PrefersNonDefaultGPU=true
+Actions=Install;Doctor;
+
+[Desktop Action Install]
+Name=Install or Repair LFS
+Exec=lfs-linux-desktop setup
+
+[Desktop Action Doctor]
+Name=Check LFS Linux
+Exec=lfs-linux-desktop doctor

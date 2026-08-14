@@ -1,0 +1,848 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+readonly PROGRAM_NAME='lfs-linux'
+readonly DATA_DIR="${LFS_LINUX_DATA_DIR:-/usr/share/lfs-linux}"
+readonly RELEASE_FILE="$DATA_DIR/release.env"
+[[ -r "$RELEASE_FILE" ]] || { printf '%s: release manifest not found: %s\n' "$PROGRAM_NAME" "$RELEASE_FILE" >&2; exit 1; }
+# shellcheck source=/dev/null
+source "$RELEASE_FILE"
+
+readonly STATE_ROOT="${LFS_LINUX_STATE_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/lfs-linux}"
+readonly PREFIX="$STATE_ROOT/prefix"
+readonly GAME_DIR="$PREFIX/drive_c/LFS"
+readonly GAME_EXE="$GAME_DIR/LFS.exe"
+readonly LFS_STOCK_MANIFEST="$DATA_DIR/$LFS_STOCK_MANIFEST_NAME"
+readonly RUNTIME_DIR="$STATE_ROOT/runtime"
+readonly PRIVATE_WINE_ROOT="$RUNTIME_DIR/wine-$WINE_RUNTIME_VERSION"
+readonly PRIVATE_WINE_BIN="$PRIVATE_WINE_ROOT/usr/bin/wine"
+readonly WINE_RUNTIME_MANIFEST="$DATA_DIR/$WINE_RUNTIME_MANIFEST_NAME"
+readonly DXVK_DIR="$RUNTIME_DIR/dxvk-$DXVK_VERSION"
+readonly DXVK_D3D9="$DXVK_DIR/x32/d3d9.dll"
+readonly CACHE_DIR="${LFS_LINUX_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/lfs-linux}"
+readonly LOG_DIR="${LFS_LINUX_LOG_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/lfs-linux}"
+readonly LOCK_DIR="${XDG_RUNTIME_DIR:-/tmp}/lfs-linux-${UID}"
+readonly INSTALLER="$CACHE_DIR/$LFS_INSTALLER_NAME"
+readonly WINE_PACKAGE="$CACHE_DIR/$WINE_PACKAGE_NAME"
+readonly DXVK_ARCHIVE="$CACHE_DIR/$DXVK_ARCHIVE_NAME"
+readonly INSTALL_MARKER="$STATE_ROOT/install.env"
+readonly STATE_SENTINEL="$STATE_ROOT/.managed-by-lfs-linux"
+readonly DXVK_OVERRIDE='native,builtin'
+readonly WINE_DLL_OVERRIDES="mscoree,mshtml=;d3d9=$DXVK_OVERRIDE"
+
+WINE_BIN=''
+WINE_SERVER=''
+WINE_VERSION=''
+WINE_ROOT=''
+WINE_LIB_DIR=''
+
+usage() {
+  cat <<'EOF'
+Usage: lfs-linux <command>
+
+Commands:
+  setup         Explain downloads, ask once, install or repair, then return
+  install       Install or repair directly after an explicit CLI command
+  launch        Validate the installation and start Live for Speed
+  stop          Request a clean exit, then stop only this private Wine prefix
+  doctor        Check host, manifest, prefix, DXVK, game, and graphics prerequisites
+  status        Show paths, versions, and process state
+  update-check  Report official LFS download-page changes without modifying state
+  verify-sources  Download and verify pinned LFS and DXVK release inputs
+  ready         Check whether desktop first-run setup is complete
+  remove        Remove runtime/prefix state after explicit confirmation
+  purge-cache   Remove downloaded installer and DXVK archives
+  help          Show this help
+
+Environment:
+  LFS_LINUX_STATE_DIR   Override per-user installation directory
+  LFS_LINUX_CACHE_DIR   Override download cache
+  LFS_LINUX_LOG_DIR     Override runtime log directory
+  LFS_LINUX_WINE        Select the exact audited Wine executable
+  LFS_LINUX_CONFIRM_REMOVE=1  Confirm non-interactive removal
+EOF
+}
+
+note() { printf '==> %s\n' "$*"; }
+warn() { printf 'warning: %s\n' "$*" >&2; }
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+require_host_arch() {
+  [[ "$(uname -m)" == 'x86_64' ]] || die "unsupported host architecture: $(uname -m); x86_64 is required"
+}
+
+require_unprivileged() {
+  (( EUID != 0 )) || die 'do not run per-user LFS commands as root'
+}
+
+validate_paths() {
+  local path
+  for path in "$STATE_ROOT" "$CACHE_DIR" "$LOG_DIR" "$LOCK_DIR"; do
+    [[ "$path" == /* ]] || die "XDG and override paths must be absolute: $path"
+    [[ "$path" != '/' && "$path" != "$HOME" ]] || die "unsafe managed path: $path"
+  done
+}
+
+sha256_of() { sha256sum "$1" | awk '{print $1}'; }
+
+verify_file() {
+  local label="$1" path="$2" size="$3" checksum="$4" actual_size actual_checksum
+  [[ -f "$path" ]] || die "$label is missing: $path"
+  actual_size="$(stat -c %s "$path")"
+  [[ "$actual_size" == "$size" ]] || die "$label size drift: expected $size, found $actual_size"
+  actual_checksum="$(sha256_of "$path")"
+  [[ "$actual_checksum" == "$checksum" ]] || die "$label checksum drift: expected $checksum, found $actual_checksum"
+}
+
+file_matches() {
+  local path="$1" expected_size="$2" expected_hash="$3"
+  [[ -f "$path" ]] || return 1
+  [[ "$(stat -c %s "$path")" == "$expected_size" ]] || return 1
+  [[ "$(sha256_of "$path")" == "$expected_hash" ]]
+}
+
+payload_manifest_check() {
+  local root="$1" manifest="$2" manifest_size="$3" manifest_hash="$4" expected_entries="$5" mode="${6:-full}"
+  local type expected expected_size relative actual entry_count checks output
+  file_matches "$manifest" "$manifest_size" "$manifest_hash" || { printf 'manifest missing or changed: %s\n' "$manifest"; return 1; }
+  [[ -d "$root" ]] || { printf 'payload root missing: %s\n' "$root"; return 1; }
+  entry_count="$(awk -F '\t' '$1 == "f" || $1 == "l" { count++ } END { print count + 0 }' "$manifest")"
+  [[ "$entry_count" == "$expected_entries" ]] || { printf 'manifest entry-count drift: expected %s, found %s\n' "$expected_entries" "$entry_count"; return 1; }
+  awk -F '\t' '($1 == "f" || $1 == "l") && ($4 == "" || $4 ~ /^\// || $4 ~ /(^|\/)\.\.(\/|$)/) { exit 1 }' "$manifest" || {
+    printf 'unsafe path in payload manifest\n'
+    return 1
+  }
+  while IFS=$'\t' read -r type expected expected_size relative; do
+    case "$type" in
+      f)
+        [[ -f "$root/$relative" && ! -L "$root/$relative" ]] || { printf 'required stock file missing: %s\n' "$relative"; return 1; }
+        ;;
+      l)
+        [[ -L "$root/$relative" ]] || { printf 'required runtime link missing: %s\n' "$relative"; return 1; }
+        actual="$(readlink -- "$root/$relative")"
+        [[ "$actual" == "$expected" ]] || { printf 'runtime link drift: %s\n' "$relative"; return 1; }
+        ;;
+    esac
+  done <"$manifest"
+  [[ "$mode" == 'layout' ]] && return
+  checks="$(mktemp "${TMPDIR:-/tmp}/lfs-linux-checks.XXXXXX")"
+  awk -F '\t' '$1 == "f" { print $2 "  " $4 }' "$manifest" >"$checks"
+  if ! output="$(cd "$root" && sha256sum --check --quiet "$checks" 2>&1)"; then
+    rm -f "$checks"
+    printf '%s\n' "${output:-payload checksum drift}"
+    return 1
+  fi
+  rm -f "$checks"
+}
+
+verify_payload_manifest() {
+  local label="$1" root="$2" manifest="$3" manifest_size="$4" manifest_hash="$5" entries="$6" issue
+  if ! issue="$(payload_manifest_check "$root" "$manifest" "$manifest_size" "$manifest_hash" "$entries")"; then
+    die "$label drift: $issue"
+  fi
+}
+
+download_verified() {
+  local label="$1" url="$2" path="$3" size="$4" checksum="$5"
+  mkdir -p "$CACHE_DIR"
+  chmod 0700 "$CACHE_DIR"
+  if [[ -f "$path" ]]; then
+    if [[ "$(stat -c %s "$path")" == "$size" && "$(sha256_of "$path")" == "$checksum" ]]; then
+      note "Using verified cached $label"
+      return
+    fi
+    rm -f "$path"
+  fi
+  rm -f "$path.part"
+  note "Downloading $label"
+  if ! curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 \
+    --max-time 1200 --speed-limit 10240 --speed-time 60 --progress-bar \
+    --output "$path.part" "$url"; then
+    rm -f "$path.part"
+    die "$label download failed"
+  fi
+  verify_file "$label" "$path.part" "$size" "$checksum"
+  mv "$path.part" "$path"
+}
+
+detect_wine() {
+  local candidate version usr_dir
+  if [[ -n "${LFS_LINUX_WINE:-}" ]]; then
+    candidate="$LFS_LINUX_WINE"
+  elif [[ -x "$PRIVATE_WINE_BIN" ]]; then
+    candidate="$PRIVATE_WINE_BIN"
+  else
+    candidate="$(command -v wine 2>/dev/null || true)"
+  fi
+  [[ -n "$candidate" && -x "$candidate" ]] || return 1
+  version="$($candidate --version 2>/dev/null | head -n 1)"
+  [[ "$version" == "$WINE_VERSION_OUTPUT" ]] || return 1
+  usr_dir="$(cd -- "$(dirname "$candidate")/.." 2>/dev/null && pwd -P)"
+  [[ -n "$usr_dir" && -d "$usr_dir/lib/wine" && -x "$usr_dir/bin/wineserver" ]] || return 1
+  WINE_BIN="$candidate"
+  WINE_VERSION="$version"
+  WINE_SERVER="$usr_dir/bin/wineserver"
+  WINE_ROOT="$(dirname "$usr_dir")"
+  WINE_LIB_DIR="$usr_dir/lib/wine"
+}
+
+wine_runtime_is_complete() {
+  [[ -n "$WINE_ROOT" ]] || return 1
+  payload_manifest_check "$WINE_ROOT" "$WINE_RUNTIME_MANIFEST" \
+    "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES" >/dev/null
+}
+
+wine_runtime_layout_is_complete() {
+  [[ -n "$WINE_ROOT" ]] || return 1
+  payload_manifest_check "$WINE_ROOT" "$WINE_RUNTIME_MANIFEST" \
+    "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES" layout >/dev/null
+}
+
+require_wine() {
+  detect_wine || die "exact audited Wine $WINE_RUNTIME_VERSION is required; run lfs-linux install"
+  verify_payload_manifest "Wine $WINE_RUNTIME_VERSION runtime" "$WINE_ROOT" "$WINE_RUNTIME_MANIFEST" \
+    "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES"
+}
+
+ensure_wine_runtime() {
+  local unpack="$STATE_ROOT/.wine-unpack.$$"
+  if detect_wine && wine_runtime_is_complete; then
+    return
+  fi
+  mkdir -p "$STATE_ROOT" "$RUNTIME_DIR" "$CACHE_DIR" "$LOG_DIR"
+  download_verified "audited Arch Wine $WINE_RUNTIME_VERSION package" "$WINE_PACKAGE_URL" "$WINE_PACKAGE" \
+    "$WINE_PACKAGE_SIZE" "$WINE_PACKAGE_SHA256"
+  rm -rf --one-file-system "$unpack"
+  mkdir -p "$unpack"
+  trap 'rm -rf --one-file-system "$unpack"' EXIT
+  note "Provisioning private Wine $WINE_RUNTIME_VERSION runtime"
+  bsdtar -xf "$WINE_PACKAGE" -C "$unpack"
+  verify_payload_manifest "extracted Wine $WINE_RUNTIME_VERSION runtime" "$unpack" "$WINE_RUNTIME_MANIFEST" \
+    "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES"
+  rm -rf --one-file-system "$PRIVATE_WINE_ROOT"
+  mv "$unpack" "$PRIVATE_WINE_ROOT"
+  trap - EXIT
+  detect_wine || die "provisioned Wine $WINE_RUNTIME_VERSION did not start"
+  wine_runtime_is_complete || die "provisioned Wine $WINE_RUNTIME_VERSION failed payload validation"
+}
+
+wine_env() {
+  env \
+    WINEPREFIX="$PREFIX" \
+    WINEDEBUG="${WINEDEBUG:--all}" \
+    WINEDLLPATH="$WINE_LIB_DIR" \
+    WINEDLLOVERRIDES="$WINE_DLL_OVERRIDES" \
+    DXVK_LOG_PATH="$LOG_DIR" \
+    DXVK_SHADER_CACHE_PATH="$CACHE_DIR/dxvk-shaders" \
+    "$@"
+}
+
+kill_private_wineserver() {
+  [[ -n "$WINE_SERVER" && -x "$WINE_SERVER" ]] || return 0
+  wine_env timeout --foreground --kill-after=5s 15 "$WINE_SERVER" -k 2>/dev/null || true
+}
+
+wait_private_wineserver() {
+  if ! wine_env timeout --foreground --kill-after=5s 60 "$WINE_SERVER" --wait; then
+    kill_private_wineserver
+    die 'private Wine processes did not settle within 60 seconds'
+  fi
+}
+
+prefix_processes() {
+  local pid prefix
+  for pid in /proc/[0-9]*; do
+    prefix="$(sed -z -n 's/^WINEPREFIX=//p' "$pid/environ" 2>/dev/null | tr -d '\0' || true)"
+    [[ "$prefix" == "$PREFIX" ]] && printf '%s\n' "${pid##*/}"
+  done
+}
+
+game_processes() {
+  local pid command_line command_name
+  while IFS= read -r pid; do
+    command_name="$(cat "/proc/$pid/comm" 2>/dev/null || true)"
+    command_line="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+    if [[ "${command_name,,}" == 'lfs.exe' || "${command_line,,}" == *'lfs.exe'* ]]; then
+      printf '%s\n' "$pid"
+    fi
+  done < <(prefix_processes)
+}
+
+game_is_running() {
+  [[ -n "$(game_processes)" ]]
+}
+
+wait_for_exit() {
+  local seconds="$1" i
+  for ((i = 0; i < seconds; i++)); do
+    game_is_running || return 0
+    sleep 1
+  done
+  return 1
+}
+
+init_prefix() {
+  mkdir -p "$STATE_ROOT" "$CACHE_DIR" "$LOG_DIR" "$LOCK_DIR"
+  chmod 0700 "$STATE_ROOT" "$CACHE_DIR" "$LOG_DIR" "$LOCK_DIR"
+  printf '%s\n' 'lfs-linux managed state; unknown files are preserved on removal' >"$STATE_SENTINEL"
+  chmod 0600 "$STATE_SENTINEL"
+  if [[ ! -f "$PREFIX/system.reg" ]]; then
+    note "Creating private Wine prefix with $WINE_VERSION"
+    if ! wine_env timeout --foreground --kill-after=10s 180 "$WINE_BIN" wineboot --init; then
+      kill_private_wineserver
+      rm -rf --one-file-system "$PREFIX"
+      die 'Wine prefix initialization failed or timed out'
+    fi
+    wait_private_wineserver
+  elif [[ ! -f "$INSTALL_MARKER" ]] || ! grep -Fqx "WINE_VERSION='$WINE_VERSION'" "$INSTALL_MARKER"; then
+    note "Updating the private prefix for $WINE_VERSION"
+    if ! wine_env timeout --foreground --kill-after=10s 180 "$WINE_BIN" wineboot --update; then
+      kill_private_wineserver
+      die 'Wine prefix update failed or timed out; existing data was preserved'
+    fi
+    wait_private_wineserver
+  fi
+  grep -Fq '#arch=win64' "$PREFIX/system.reg" || die 'prefix architecture drift; expected win64'
+}
+
+install_dxvk() {
+  local unpack="$CACHE_DIR/.dxvk-unpack.$$"
+  download_verified 'DXVK archive' "$DXVK_ARCHIVE_URL" "$DXVK_ARCHIVE" \
+    "$DXVK_ARCHIVE_SIZE" "$DXVK_ARCHIVE_SHA256"
+  rm -rf "$unpack"
+  mkdir -p "$unpack"
+  tar -xzf "$DXVK_ARCHIVE" -C "$unpack"
+  verify_file 'DXVK d3d9 x32 DLL' "$unpack/dxvk-$DXVK_VERSION/x32/d3d9.dll" \
+    "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+  rm -rf "$DXVK_DIR"
+  mkdir -p "$DXVK_DIR/x32"
+  install -m0644 "$unpack/dxvk-$DXVK_VERSION/x32/d3d9.dll" "$DXVK_D3D9"
+  rm -rf "$unpack"
+  install -m0644 "$DXVK_D3D9" "$PREFIX/drive_c/windows/syswow64/d3d9.dll"
+  if ! wine_env timeout --foreground --kill-after=5s 60 "$WINE_BIN" reg add \
+    'HKCU\Software\Wine\DllOverrides' /v d3d9 /d "$DXVK_OVERRIDE" /f >/dev/null; then
+    kill_private_wineserver
+    die 'DXVK registry override failed or timed out'
+  fi
+  wait_private_wineserver
+}
+
+validate_existing_game_source() {
+  local actual_size actual_checksum
+  [[ -f "$GAME_EXE" ]] || return 0
+  actual_size="$(stat -c %s "$GAME_EXE")"
+  actual_checksum="$(sha256_of "$GAME_EXE")"
+  if [[ "$actual_size" == "$LFS_EXE_SIZE" && "$actual_checksum" == "$LFS_EXE_SHA256" ]]; then
+    return
+  fi
+  [[ " $LFS_UPGRADE_FROM_SHA256S " == *" $actual_checksum "* ]] ||
+    die "existing LFS.exe is not an approved upgrade source: $actual_checksum"
+}
+
+game_tree_is_complete() {
+  local root="${1:-$GAME_DIR}" file_count tree_bytes
+  payload_manifest_check "$root" "$LFS_STOCK_MANIFEST" \
+    "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES" >/dev/null || return 1
+  file_matches "$root/LFS.exe" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_HELMET_PATH" "$LFS_REQUIRED_HELMET_SIZE" "$LFS_REQUIRED_HELMET_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_TRACK_PATH" "$LFS_REQUIRED_TRACK_SIZE" "$LFS_REQUIRED_TRACK_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_VEHICLE_PATH" "$LFS_REQUIRED_VEHICLE_SIZE" "$LFS_REQUIRED_VEHICLE_SHA256" || return 1
+  file_count="$(find "$root" -type f -printf . | wc -c)"
+  tree_bytes="$(du -sb "$root" | awk '{print $1}')"
+  (( file_count >= LFS_TREE_MIN_FILE_COUNT && tree_bytes >= LFS_TREE_MIN_BYTES ))
+}
+
+game_tree_layout_is_complete() {
+  local root="${1:-$GAME_DIR}" file_count tree_bytes
+  payload_manifest_check "$root" "$LFS_STOCK_MANIFEST" \
+    "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES" layout >/dev/null || return 1
+  file_matches "$root/LFS.exe" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_HELMET_PATH" "$LFS_REQUIRED_HELMET_SIZE" "$LFS_REQUIRED_HELMET_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_TRACK_PATH" "$LFS_REQUIRED_TRACK_SIZE" "$LFS_REQUIRED_TRACK_SHA256" || return 1
+  file_matches "$root/$LFS_REQUIRED_VEHICLE_PATH" "$LFS_REQUIRED_VEHICLE_SIZE" "$LFS_REQUIRED_VEHICLE_SHA256" || return 1
+  file_count="$(find "$root" -type f -printf . | wc -c)"
+  tree_bytes="$(du -sb "$root" | awk '{print $1}')"
+  (( file_count >= LFS_TREE_MIN_FILE_COUNT && tree_bytes >= LFS_TREE_MIN_BYTES ))
+}
+
+verify_game_tree() {
+  local root="$1" label="$2" file_count tree_bytes
+  verify_payload_manifest "$label immutable stock payload" "$root" "$LFS_STOCK_MANIFEST" \
+    "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES"
+  verify_file "$label LFS.exe" "$root/LFS.exe" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256"
+  verify_file "$label default helmet" "$root/$LFS_REQUIRED_HELMET_PATH" \
+    "$LFS_REQUIRED_HELMET_SIZE" "$LFS_REQUIRED_HELMET_SHA256"
+  verify_file "$label Blackwood track" "$root/$LFS_REQUIRED_TRACK_PATH" \
+    "$LFS_REQUIRED_TRACK_SIZE" "$LFS_REQUIRED_TRACK_SHA256"
+  verify_file "$label demo vehicle" "$root/$LFS_REQUIRED_VEHICLE_PATH" \
+    "$LFS_REQUIRED_VEHICLE_SIZE" "$LFS_REQUIRED_VEHICLE_SHA256"
+  file_count="$(find "$root" -type f -printf . | wc -c)"
+  tree_bytes="$(du -sb "$root" | awk '{print $1}')"
+  (( file_count >= LFS_TREE_MIN_FILE_COUNT )) || die "$label file-count drift: expected at least $LFS_TREE_MIN_FILE_COUNT, found $file_count"
+  (( tree_bytes >= LFS_TREE_MIN_BYTES )) || die "$label size drift: expected at least $LFS_TREE_MIN_BYTES bytes, found $tree_bytes"
+}
+
+player_owned_game_path() {
+  case "$1" in
+    cfg.txt|interface_cfg.txt|data/colours/*|data/layout/*|data/misc/*|data/move/*|data/mpr/*|data/raf/*|data/script/*|data/setups/*|data/settings/*|data/shots/*|data/spr/*|data/training/*|data/views/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+merge_game_tree() {
+  local unpack="$1" source relative destination
+  mkdir -p "$GAME_DIR"
+  while IFS= read -r -d '' source; do
+    relative="${source#"$unpack/"}"
+    destination="$GAME_DIR/$relative"
+    if player_owned_game_path "$relative" && [[ -e "$destination" ]]; then
+      continue
+    fi
+    mkdir -p "$(dirname "$destination")"
+    cp -a --remove-destination -- "$source" "$destination"
+  done < <(find "$unpack" -type f -print0)
+}
+
+install_game() {
+  local unpack="$STATE_ROOT/.lfs-unpack.$$" actual_size actual_checksum extract_log="$LOG_DIR/lfs-extract.log"
+  if [[ -f "$GAME_EXE" ]]; then
+    actual_size="$(stat -c %s "$GAME_EXE")"
+    actual_checksum="$(sha256_of "$GAME_EXE")"
+    if [[ "$actual_size" == "$LFS_EXE_SIZE" && "$actual_checksum" == "$LFS_EXE_SHA256" ]]; then
+      if game_tree_is_complete; then
+        note 'Verified complete stock LFS installation; preserving game-owned data'
+        return
+      fi
+      note 'Stock LFS tree is incomplete; repairing it from the verified official archive'
+    elif [[ " $LFS_UPGRADE_FROM_SHA256S " == *" $actual_checksum "* ]]; then
+      note 'Verified an approved older stock LFS build; preserving player data during upgrade'
+    else
+      die "existing LFS.exe is not an approved upgrade source: $actual_checksum"
+    fi
+  fi
+  download_verified "official LFS $LFS_VERSION installer" "$LFS_INSTALLER_URL" "$INSTALLER" \
+    "$LFS_INSTALLER_SIZE" "$LFS_INSTALLER_SHA256"
+  rm -rf --one-file-system "$unpack"
+  mkdir -p "$unpack"
+  trap 'rm -rf --one-file-system "$unpack"' EXIT
+  note 'Extracting untouched official LFS files into private staging'
+  if ! timeout --foreground --kill-after=10s 300 7z x -y "-o$unpack" "$INSTALLER" >"$extract_log"; then
+    die "official LFS archive extraction failed; see $extract_log"
+  fi
+  rm -rf --one-file-system "$unpack/\$PLUGINSDIR"
+  rm -f "$unpack/UninstallLFS.exe"
+  verify_game_tree "$unpack" 'extracted LFS'
+  if [[ ! -e "$GAME_DIR" ]]; then
+    mkdir -p "$(dirname "$GAME_DIR")"
+    mv "$unpack" "$GAME_DIR"
+  else
+    merge_game_tree "$unpack"
+    rm -rf --one-file-system "$unpack"
+  fi
+  trap - EXIT
+  verify_game_tree "$GAME_DIR" 'installed LFS'
+}
+
+write_marker() {
+  local tmp="$INSTALL_MARKER.tmp"
+  umask 077
+  cat >"$tmp" <<EOF
+LFS_VERSION='$LFS_VERSION'
+LFS_EXE_SHA256='$LFS_EXE_SHA256'
+LFS_STOCK_MANIFEST_SHA256='$LFS_STOCK_MANIFEST_SHA256'
+DXVK_VERSION='$DXVK_VERSION'
+DXVK_D3D9_X32_SHA256='$DXVK_D3D9_X32_SHA256'
+WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'
+WINE_RUNTIME_MANIFEST_SHA256='$WINE_RUNTIME_MANIFEST_SHA256'
+WINE_VERSION='$WINE_VERSION'
+PREFIX_ARCH='win64'
+EOF
+  mv "$tmp" "$INSTALL_MARKER"
+}
+
+validate_installation() {
+  require_wine
+  [[ -f "$PREFIX/system.reg" ]] || die 'private prefix is missing; run lfs-linux install'
+  grep -Fq '#arch=win64' "$PREFIX/system.reg" || die 'prefix architecture drift; expected win64'
+  [[ -f "$INSTALL_MARKER" ]] || die 'installation marker is missing; run lfs-linux install'
+  grep -Fqx "LFS_VERSION='$LFS_VERSION'" "$INSTALL_MARKER" || die 'installed LFS release differs from wrapper manifest'
+  grep -Fqx "LFS_EXE_SHA256='$LFS_EXE_SHA256'" "$INSTALL_MARKER" || die 'installation marker LFS checksum drift'
+  grep -Fqx "LFS_STOCK_MANIFEST_SHA256='$LFS_STOCK_MANIFEST_SHA256'" "$INSTALL_MARKER" || die 'installation marker stock-manifest drift'
+  grep -Fqx "DXVK_VERSION='$DXVK_VERSION'" "$INSTALL_MARKER" || die 'installed DXVK release differs from wrapper manifest'
+  grep -Fqx "DXVK_D3D9_X32_SHA256='$DXVK_D3D9_X32_SHA256'" "$INSTALL_MARKER" || die 'installation marker DXVK checksum drift'
+  grep -Fqx "PREFIX_ARCH='win64'" "$INSTALL_MARKER" || die 'installation marker architecture drift'
+  grep -Fqx "WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'" "$INSTALL_MARKER" || die 'installed Wine runtime differs from wrapper manifest'
+  grep -Fqx "WINE_RUNTIME_MANIFEST_SHA256='$WINE_RUNTIME_MANIFEST_SHA256'" "$INSTALL_MARKER" || die 'installation marker Wine payload drift'
+  grep -Fqx "WINE_VERSION='$WINE_VERSION'" "$INSTALL_MARKER" || die 'Wine changed; run lfs-linux install to update the private prefix'
+  verify_game_tree "$GAME_DIR" 'installed LFS'
+  verify_file 'private DXVK d3d9 DLL' "$DXVK_D3D9" "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+  verify_file 'prefix DXVK d3d9 DLL' "$PREFIX/drive_c/windows/syswow64/d3d9.dll" \
+    "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+}
+
+ready_fast() {
+  detect_wine || return 1
+  wine_runtime_layout_is_complete || return 1
+  [[ -f "$STATE_SENTINEL" && -f "$PREFIX/system.reg" && -f "$INSTALL_MARKER" ]] || return 1
+  game_tree_layout_is_complete || return 1
+  [[ -f "$DXVK_D3D9" && -f "$PREFIX/drive_c/windows/syswow64/d3d9.dll" ]] || return 1
+  grep -Fq '#arch=win64' "$PREFIX/system.reg" || return 1
+  grep -Fqx "LFS_VERSION='$LFS_VERSION'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "LFS_EXE_SHA256='$LFS_EXE_SHA256'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "LFS_STOCK_MANIFEST_SHA256='$LFS_STOCK_MANIFEST_SHA256'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "DXVK_VERSION='$DXVK_VERSION'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "DXVK_D3D9_X32_SHA256='$DXVK_D3D9_X32_SHA256'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "WINE_RUNTIME_MANIFEST_SHA256='$WINE_RUNTIME_MANIFEST_SHA256'" "$INSTALL_MARKER" || return 1
+  grep -Fqx "WINE_VERSION='$WINE_VERSION'" "$INSTALL_MARKER" || return 1
+}
+
+setup_interactive() {
+  local answer lfs_mib wine_mib dxvk_mib
+  require_unprivileged
+  lfs_mib=$(( (LFS_INSTALLER_SIZE + 1048575) / 1048576 ))
+  wine_mib=$(( (WINE_PACKAGE_SIZE + 1048575) / 1048576 ))
+  dxvk_mib=$(( (DXVK_ARCHIVE_SIZE + 1048575) / 1048576 ))
+  cat <<EOF
+LFS Linux first-run setup
+
+This separate community launcher will:
+  1. Download the official LFS $LFS_VERSION installer from lfs.net ($lfs_mib MiB).
+  2. Provision audited Arch Wine $WINE_RUNTIME_VERSION from archive.archlinux.org ($wine_mib MiB)
+     when that exact system runtime is unavailable.
+  3. Download official DXVK $DXVK_VERSION from GitHub ($dxvk_mib MiB).
+  4. Verify pinned archives and every immutable Wine and game file.
+  5. Extract the untouched official game payload into:
+     $PREFIX
+  6. Install private DXVK and preserve player-owned data during repairs.
+
+Initial disk use can reach 4 GiB including download cache. Live for Speed remains
+proprietary and is governed by https://www.lfs.net/agreement. This wrapper is
+unofficial and does not redistribute or patch the game.
+
+EOF
+  printf 'Continue with verified setup? [y/N] '
+  read -r answer || return 3
+  [[ "${answer,,}" == 'y' || "${answer,,}" == 'yes' ]] || { note 'Setup cancelled'; return 3; }
+  install_all
+}
+
+install_all() {
+  require_unprivileged
+  require_host_arch
+  require_command 7z
+  require_command bsdtar
+  require_command curl
+  require_command du
+  require_command find
+  require_command sha256sum
+  require_command stat
+  require_command tar
+  require_command timeout
+  ensure_wine_runtime
+  require_wine
+  validate_existing_game_source
+  init_prefix
+  install_game
+  install_dxvk
+  write_marker
+  note 'Installation complete. Run: lfs-linux launch'
+}
+
+launch_game() {
+  local log lock_file
+  require_unprivileged
+  require_host_arch
+  require_command flock
+  validate_installation
+  [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] || die 'no graphical session is available'
+  mkdir -p "$LOG_DIR" "$LOCK_DIR" "$CACHE_DIR/dxvk-shaders"
+  lock_file="$LOCK_DIR/launch.lock"
+  exec 9>"$lock_file"
+  if ! flock -n 9; then
+    command -v wmctrl >/dev/null 2>&1 && wmctrl -a 'Live for Speed' 2>/dev/null || true
+    note 'LFS is already launching or running'
+    return
+  fi
+  if game_is_running; then
+    command -v wmctrl >/dev/null 2>&1 && wmctrl -a 'Live for Speed' 2>/dev/null || true
+    note 'LFS is already running'
+    return
+  fi
+  log="$LOG_DIR/launch-$(date +%Y%m%d-%H%M%S).log"
+  ln -sfn "$(basename "$log")" "$LOG_DIR/latest.log"
+  note "Starting stock LFS $LFS_VERSION with $WINE_VERSION and private DXVK $DXVK_VERSION"
+  cd "$GAME_DIR"
+  exec env \
+    WINEPREFIX="$PREFIX" \
+    WINEDEBUG="${WINEDEBUG:--all}" \
+    WINEDLLPATH="$WINE_LIB_DIR" \
+    WINEDLLOVERRIDES="$WINE_DLL_OVERRIDES" \
+    DXVK_LOG_PATH="$LOG_DIR" \
+    DXVK_SHADER_CACHE_PATH="$CACHE_DIR/dxvk-shaders" \
+    "$WINE_BIN" "$GAME_EXE" /windowed=yes >>"$log" 2>&1
+}
+
+stop_game() {
+  local window
+  local -a pid_list=()
+  require_unprivileged
+  require_command timeout
+  require_wine
+  game_is_running || { note 'LFS is already stopped'; return; }
+  window=''
+  if [[ -n "${DISPLAY:-}" ]] && command -v xdotool >/dev/null 2>&1; then
+    window="$(xdotool search --onlyvisible --name '^Live for Speed$' 2>/dev/null | head -n 1 || true)"
+  fi
+  if [[ -n "$window" ]]; then
+    xdotool windowactivate --sync "$window" 2>/dev/null || true
+    xdotool key --clearmodifiers alt+F4
+    wait_for_exit 5 && { note 'LFS stopped cleanly via window close'; return; }
+    window="$(xdotool search --onlyvisible --name '^Live for Speed$' 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$window" ]]; then
+      xdotool windowactivate --sync "$window" 2>/dev/null || true
+      xdotool key --clearmodifiers t
+      xdotool type --clearmodifiers --delay 20 '/exit'
+      xdotool key --clearmodifiers Return
+      wait_for_exit 10 && { note 'LFS stopped cleanly'; return; }
+    fi
+  fi
+  warn 'clean in-game exit was unavailable; stopping only the private Wine prefix'
+  kill_private_wineserver
+  wait_for_exit 5 && return
+  mapfile -t pid_list < <(prefix_processes)
+  (( ${#pid_list[@]} == 0 )) || kill -TERM "${pid_list[@]}" 2>/dev/null || true
+  wait_for_exit 3 || die 'private prefix processes did not stop'
+}
+
+run_doctor() {
+  local failures=0 version_output loader_summary wine_available=0 file_tools_available=1
+  pass() { printf '[PASS] %s\n' "$*"; }
+  fail_check() { printf '[FAIL] %s\n' "$*"; failures=$((failures + 1)); }
+  info() { printf '[INFO] %s\n' "$*"; }
+  check_file() {
+    local label="$1" path="$2" expected_size="$3" expected_hash="$4" actual_size actual_hash
+    if [[ ! -f "$path" ]]; then fail_check "$label missing"; return; fi
+    actual_size="$(stat -c %s "$path")"
+    if [[ "$actual_size" != "$expected_size" ]]; then fail_check "$label size drift"; return; fi
+    actual_hash="$(sha256_of "$path")"
+    if [[ "$actual_hash" == "$expected_hash" ]]; then pass "$label size and checksum"; else fail_check "$label checksum drift"; fi
+  }
+  check_marker() {
+    local label="$1" expected_line="$2"
+    if grep -Fqx "$expected_line" "$INSTALL_MARKER"; then pass "$label"; else fail_check "$label drift"; fi
+  }
+  check_payload() {
+    local label="$1" root="$2" manifest="$3" manifest_size="$4" manifest_hash="$5" entries="$6" issue
+    if issue="$(payload_manifest_check "$root" "$manifest" "$manifest_size" "$manifest_hash" "$entries")"; then
+      pass "$label: all $entries immutable entries"
+    else
+      fail_check "$label drift: $issue"
+    fi
+  }
+  check_game_tree_metrics() {
+    local file_count tree_bytes
+    if [[ ! -d "$GAME_DIR" ]]; then fail_check 'stock LFS tree missing'; return; fi
+    file_count="$(find "$GAME_DIR" -type f -printf . | wc -c)"
+    tree_bytes="$(du -sb "$GAME_DIR" | awk '{print $1}')"
+    if (( file_count >= LFS_TREE_MIN_FILE_COUNT )); then pass "stock LFS tree file count: $file_count"; else fail_check "stock LFS tree incomplete: $file_count files"; fi
+    if (( tree_bytes >= LFS_TREE_MIN_BYTES )); then pass "stock LFS tree bytes: $tree_bytes"; else fail_check "stock LFS tree incomplete: $tree_bytes bytes"; fi
+  }
+
+  if [[ "$(uname -m)" == 'x86_64' ]]; then
+    pass 'host architecture: x86_64'
+  else
+    fail_check "unsupported host architecture: $(uname -m)"
+  fi
+  if detect_wine 2>/dev/null; then
+    wine_available=1
+    pass "exact Wine runtime: $WINE_RUNTIME_VERSION ($WINE_VERSION)"
+  else
+    fail_check "exact audited Wine $WINE_RUNTIME_VERSION is unavailable"
+  fi
+  if command -v 7z >/dev/null 2>&1; then pass '7z available'; else fail_check '7z missing'; fi
+  if command -v bsdtar >/dev/null 2>&1; then pass 'bsdtar available'; else fail_check 'bsdtar missing'; fi
+  if command -v curl >/dev/null 2>&1; then pass 'curl available'; else fail_check 'curl missing'; fi
+  if command -v tar >/dev/null 2>&1; then pass 'tar available'; else fail_check 'tar missing'; fi
+  if command -v flock >/dev/null 2>&1; then pass 'flock available'; else fail_check 'flock missing'; fi
+  if ! command -v awk >/dev/null 2>&1 || ! command -v du >/dev/null 2>&1 || \
+     ! command -v find >/dev/null 2>&1 || ! command -v mktemp >/dev/null 2>&1 || \
+     ! command -v readlink >/dev/null 2>&1 || ! command -v stat >/dev/null 2>&1 || \
+     ! command -v sha256sum >/dev/null 2>&1; then
+    fail_check 'file verification tools missing'
+    file_tools_available=0
+  fi
+  if (( wine_available && file_tools_available )); then
+    check_payload "Wine $WINE_RUNTIME_VERSION payload" "$WINE_ROOT" "$WINE_RUNTIME_MANIFEST" \
+      "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES"
+  fi
+  if [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then pass 'graphical session available'; else info 'no graphical session in current shell'; fi
+  if command -v vulkaninfo >/dev/null 2>&1; then
+    loader_summary="$(vulkaninfo --summary 2>/dev/null || true)"
+    if grep -Fq 'deviceName' <<<"$loader_summary"; then pass 'Vulkan device available'; else fail_check 'Vulkan exposes no device'; fi
+  else
+    info 'vulkaninfo unavailable; runtime launch remains the behavioral Vulkan check'
+  fi
+  if [[ -d "$STATE_ROOT" ]]; then
+    pass "user state: $STATE_ROOT"
+    if [[ -f "$STATE_SENTINEL" ]]; then pass 'managed-state sentinel'; else fail_check 'managed-state sentinel missing'; fi
+    if [[ -f "$PREFIX/system.reg" ]] && grep -Fq '#arch=win64' "$PREFIX/system.reg"; then
+      pass 'prefix architecture: win64'
+    else
+      fail_check 'prefix architecture missing or drifted'
+    fi
+    if [[ -f "$INSTALL_MARKER" ]]; then
+      pass 'installation marker present'
+      check_marker 'marker LFS release' "LFS_VERSION='$LFS_VERSION'"
+      check_marker 'marker LFS checksum' "LFS_EXE_SHA256='$LFS_EXE_SHA256'"
+      check_marker 'marker stock manifest' "LFS_STOCK_MANIFEST_SHA256='$LFS_STOCK_MANIFEST_SHA256'"
+      check_marker 'marker DXVK release' "DXVK_VERSION='$DXVK_VERSION'"
+      check_marker 'marker DXVK checksum' "DXVK_D3D9_X32_SHA256='$DXVK_D3D9_X32_SHA256'"
+      check_marker 'marker prefix architecture' "PREFIX_ARCH='win64'"
+      check_marker 'marker Wine runtime' "WINE_RUNTIME_VERSION='$WINE_RUNTIME_VERSION'"
+      check_marker 'marker Wine payload' "WINE_RUNTIME_MANIFEST_SHA256='$WINE_RUNTIME_MANIFEST_SHA256'"
+      if (( wine_available )); then check_marker 'marker Wine output' "WINE_VERSION='$WINE_VERSION'"; fi
+    else
+      fail_check 'installation marker missing'
+    fi
+    if (( file_tools_available )); then
+      check_payload 'immutable stock LFS payload' "$GAME_DIR" "$LFS_STOCK_MANIFEST" \
+        "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES"
+      check_file 'stock LFS.exe' "$GAME_EXE" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256"
+      check_file 'stock default helmet' "$GAME_DIR/$LFS_REQUIRED_HELMET_PATH" "$LFS_REQUIRED_HELMET_SIZE" "$LFS_REQUIRED_HELMET_SHA256"
+      check_file 'stock Blackwood track' "$GAME_DIR/$LFS_REQUIRED_TRACK_PATH" "$LFS_REQUIRED_TRACK_SIZE" "$LFS_REQUIRED_TRACK_SHA256"
+      check_file 'stock demo vehicle' "$GAME_DIR/$LFS_REQUIRED_VEHICLE_PATH" "$LFS_REQUIRED_VEHICLE_SIZE" "$LFS_REQUIRED_VEHICLE_SHA256"
+      check_game_tree_metrics
+      check_file 'private DXVK d3d9' "$DXVK_D3D9" "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+      check_file 'prefix DXVK d3d9' "$PREFIX/drive_c/windows/syswow64/d3d9.dll" "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+    fi
+  else
+    info 'not installed yet'
+  fi
+  if game_is_running; then info 'private prefix is running'; else info 'private prefix is stopped'; fi
+  version_output="wrapper $LFS_LINUX_VERSION; LFS $LFS_VERSION; Wine $WINE_RUNTIME_VERSION; DXVK $DXVK_VERSION"
+  info "$version_output"
+  printf '\nDoctor summary: %d failure(s)\n' "$failures"
+  (( failures == 0 ))
+}
+
+show_status() {
+  detect_wine 2>/dev/null || true
+  printf 'Wrapper:    %s\n' "$LFS_LINUX_VERSION"
+  printf 'LFS pin:    %s\n' "$LFS_VERSION"
+  printf 'DXVK pin:   %s\n' "$DXVK_VERSION"
+  printf 'Wine pin:   %s\n' "$WINE_RUNTIME_VERSION"
+  printf 'Wine:       %s\n' "${WINE_VERSION:-missing}"
+  printf 'State:      %s\n' "$STATE_ROOT"
+  printf 'Game:       %s\n' "$GAME_EXE"
+  printf 'Logs:       %s\n' "$LOG_DIR"
+  game_is_running && printf 'Process:    running\n' || printf 'Process:    stopped\n'
+}
+
+update_check() {
+  local page latest_stable public_test expected_line
+  if [[ -n "${LFS_LINUX_DOWNLOADS_PAGE_FILE:-}" ]]; then
+    [[ -r "$LFS_LINUX_DOWNLOADS_PAGE_FILE" ]] || die "downloads-page fixture is unreadable: $LFS_LINUX_DOWNLOADS_PAGE_FILE"
+    page="$(<"$LFS_LINUX_DOWNLOADS_PAGE_FILE")"
+  else
+    require_command curl
+    page="$(curl --fail --location --silent --show-error --max-time 30 https://www.lfs.net/downloads)" || die 'could not fetch official LFS downloads page'
+  fi
+  latest_stable="$(grep -Eo 'title="Latest Version : [^"]+' <<<"$page" | head -n 1 | sed 's/.*: //' || true)"
+  public_test="$(grep -Eo 'Live for Speed [0-9][^< ]* \(PUBLIC TEST\)' <<<"$page" | head -n 1 || true)"
+  expected_line="$LFS_INSTALLER_NAME"
+  printf 'Audited stable: %s (%s)\n' "$LFS_VERSION" "$expected_line"
+  printf 'Website stable: %s\n' "${latest_stable:-unknown}"
+  [[ -z "$public_test" ]] || printf 'Website test:   %s\n' "$public_test"
+  if [[ "$latest_stable" == "$LFS_VERSION" && "$page" == *"$expected_line"* ]]; then
+    printf 'Status:         current\n'
+    return
+  fi
+  printf 'Status:         review required; wrapper made no game-file changes\n'
+  return 2
+}
+
+verify_sources() {
+  local unpack
+  require_unprivileged
+  require_command 7z
+  require_command bsdtar
+  require_command curl
+  require_command du
+  require_command find
+  require_command sha256sum
+  require_command stat
+  require_command tar
+  require_command timeout
+  download_verified "official LFS $LFS_VERSION installer" "$LFS_INSTALLER_URL" "$INSTALLER" \
+    "$LFS_INSTALLER_SIZE" "$LFS_INSTALLER_SHA256"
+  download_verified "audited Arch Wine $WINE_RUNTIME_VERSION package" "$WINE_PACKAGE_URL" "$WINE_PACKAGE" \
+    "$WINE_PACKAGE_SIZE" "$WINE_PACKAGE_SHA256"
+  download_verified 'DXVK archive' "$DXVK_ARCHIVE_URL" "$DXVK_ARCHIVE" \
+    "$DXVK_ARCHIVE_SIZE" "$DXVK_ARCHIVE_SHA256"
+  unpack="$(mktemp -d "$CACHE_DIR/.verify-payloads.XXXXXX")"
+  trap 'rm -rf --one-file-system "$unpack"' EXIT
+  timeout --foreground --kill-after=10s 300 7z x -y "-o$unpack/lfs" "$INSTALLER" >/dev/null || die 'official LFS archive extraction test failed'
+  rm -rf --one-file-system "$unpack/lfs/\$PLUGINSDIR"
+  rm -f "$unpack/lfs/UninstallLFS.exe"
+  verify_game_tree "$unpack/lfs" 'verified-source LFS'
+  rm -rf --one-file-system "$unpack/lfs"
+  mkdir -p "$unpack/wine"
+  bsdtar -xf "$WINE_PACKAGE" -C "$unpack/wine"
+  verify_payload_manifest "verified-source Wine $WINE_RUNTIME_VERSION runtime" "$unpack/wine" "$WINE_RUNTIME_MANIFEST" \
+    "$WINE_RUNTIME_MANIFEST_SIZE" "$WINE_RUNTIME_MANIFEST_SHA256" "$WINE_RUNTIME_MANIFEST_ENTRIES"
+  rm -rf --one-file-system "$unpack/wine"
+  tar -xzf "$DXVK_ARCHIVE" -C "$unpack"
+  verify_file 'DXVK d3d9 x32 DLL' "$unpack/dxvk-$DXVK_VERSION/x32/d3d9.dll" \
+    "$DXVK_D3D9_X32_SIZE" "$DXVK_D3D9_X32_SHA256"
+  rm -rf --one-file-system "$unpack"
+  trap - EXIT
+  note 'All pinned upstream archives and immutable payload files are reproducible and verified'
+}
+
+purge_cache() {
+  require_unprivileged
+  rm -f "$INSTALLER" "$INSTALLER.part" "$WINE_PACKAGE" "$WINE_PACKAGE.part" "$DXVK_ARCHIVE" "$DXVK_ARCHIVE.part"
+  rm -rf "$CACHE_DIR/dxvk-shaders" "$CACHE_DIR"/.dxvk-unpack.* "$CACHE_DIR"/.verify-payloads.*
+  note "Removed wrapper-managed cache: $CACHE_DIR"
+}
+
+remove_state() {
+  require_unprivileged
+  [[ -d "$STATE_ROOT" ]] || { note 'No user installation exists'; return; }
+  [[ -f "$STATE_SENTINEL" ]] || die 'state directory is not marked as managed; refusing removal'
+  game_is_running && die 'LFS is running; run lfs-linux stop first'
+  if [[ "${LFS_LINUX_CONFIRM_REMOVE:-0}" != '1' ]]; then
+    [[ -t 0 ]] || die 'removal needs a terminal or LFS_LINUX_CONFIRM_REMOVE=1'
+    printf 'Remove the complete LFS Linux prefix and game-owned player data at %s? [y/N] ' "$STATE_ROOT"
+    read -r answer
+    [[ "$answer" == 'y' || "$answer" == 'Y' ]] || { note 'Removal cancelled'; return; }
+  fi
+  rm -rf --one-file-system "$PREFIX" "$RUNTIME_DIR"
+  rm -f -- "$INSTALL_MARKER" "$STATE_SENTINEL"
+  rmdir -- "$STATE_ROOT" 2>/dev/null || warn 'kept unrecognized files in the state directory'
+  note 'Removed user installation. Wrapper package remains installed.'
+}
+
+validate_paths
+
+case "${1:-launch}" in
+  setup) setup_interactive ;;
+  install) install_all ;;
+  launch) launch_game ;;
+  stop) stop_game ;;
+  doctor) run_doctor ;;
+  status) show_status ;;
+  update-check) update_check ;;
+  verify-sources) verify_sources ;;
+  ready) ready_fast ;;
+  remove) remove_state ;;
+  purge-cache) purge_cache ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

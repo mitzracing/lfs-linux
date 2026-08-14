@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly PROGRAM_NAME='lfs-linux'
+readonly DEFAULT_LIBEXEC='/usr/lib/lfs-linux'
+readonly DEFAULT_DATA='/usr/share/lfs-linux'
+SELF_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly SELF_DIR
+
+if [[ -n "${LFS_LINUX_LIBEXEC_DIR:-}" ]]; then
+  readonly LIBEXEC_DIR="$LFS_LINUX_LIBEXEC_DIR"
+elif [[ -x "$DEFAULT_LIBEXEC/lfs-linux-core" ]]; then
+  readonly LIBEXEC_DIR="$DEFAULT_LIBEXEC"
+elif [[ -x "$SELF_DIR/../lib/lfs-linux/lfs-linux-core" ]]; then
+  LIBEXEC_DIR="$(cd -- "$SELF_DIR/../lib/lfs-linux" && pwd)"
+  readonly LIBEXEC_DIR
+else
+  LIBEXEC_DIR="$(cd -- "$SELF_DIR/../libexec" 2>/dev/null && pwd || true)"
+  readonly LIBEXEC_DIR
+fi
+
+if [[ -n "${LFS_LINUX_DATA_DIR:-}" ]]; then
+  readonly SYSTEM_DATA_DIR="$LFS_LINUX_DATA_DIR"
+elif [[ -f "$DEFAULT_DATA/release.env" ]]; then
+  readonly SYSTEM_DATA_DIR="$DEFAULT_DATA"
+else
+  SYSTEM_DATA_DIR="$(cd -- "$SELF_DIR/../share/lfs-linux" 2>/dev/null && pwd || true)"
+  readonly SYSTEM_DATA_DIR
+fi
+
+fail() {
+  printf '%s: %s\n' "$PROGRAM_NAME" "$*" >&2
+  if [[ -n "${DISPLAY:-}" ]] && command -v notify-send >/dev/null 2>&1; then
+    notify-send --app-name='LFS Linux' 'LFS Linux' "$*" 2>/dev/null || true
+  fi
+  exit 1
+}
+
+[[ -n "$LIBEXEC_DIR" && -x "$LIBEXEC_DIR/lfs-linux-core" ]] ||
+  fail 'core executable is missing; reinstall the lfs-linux package'
+[[ -n "$SYSTEM_DATA_DIR" && -f "$SYSTEM_DATA_DIR/release.env" ]] ||
+  fail 'release manifest is missing; reinstall the lfs-linux package'
+
+export LFS_LINUX_DATA_DIR="$SYSTEM_DATA_DIR"
+(( $# > 0 )) || set -- launch
+exec "$LIBEXEC_DIR/lfs-linux-core" "$@"

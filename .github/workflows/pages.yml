@@ -1,0 +1,40 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - website/**
+      - share/icons/hicolor/scalable/apps/io.github.mitzracing.lfs_linux.svg
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble static site
+        run: |
+          mkdir -p _site
+          cp website/index.html website/styles.css _site/
+          cp share/icons/hicolor/scalable/apps/io.github.mitzracing.lfs_linux.svg _site/icon.svg
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

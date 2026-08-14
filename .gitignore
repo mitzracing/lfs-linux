@@ -1,0 +1,20 @@
+# Local agent and proof artifacts
+/.pi-glla/
+/legacy/
+/artifacts/
+
+# Local build products
+/dist/
+/packaging/aur/pkg/
+/packaging/aur/src/
+/packaging/aur/*.pkg.tar.*
+/packaging/aur/*.tar.gz
+
+# Runtime downloads and prefixes must never enter source control
+*.part
+*.exe
+*.dll
+*.msi
+*.reg
+*.user.reg
+*.userdef.reg

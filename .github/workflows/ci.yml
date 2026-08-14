@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install validation tools
+        run: sudo apt-get update && sudo apt-get install -y appstream desktop-file-utils libxml2-utils shellcheck
+      - name: Run static and unit checks
+        run: make test
+      - name: Build staged install
+        run: make DESTDIR="$PWD/pkgroot" PREFIX=/usr install
+      - name: Reject proprietary payloads
+        run: ./tests/test-package-boundary.sh pkgroot
