@@ -74,11 +74,11 @@ Do not bypass checksum checks. Do not patch `LFS.exe`.
 
 ## Upgrade stops before changing the game
 
-Wrapper 0.2.0 upgrades only a complete, exact v0.1.6 LFS 0.7G immutable payload. It preserves files outside both immutable manifests and swaps the verified new tree atomically. A player file that collides with a newly added stock path is retained by content hash under `~/.local/share/lfs-linux/migration-conflicts/`. If the old stock payload drifted, repair it with immutable v0.1.6 first. If `LFS.exe` has an unknown digest, keep a backup and wait for a wrapper release that audits that exact upstream build. Do not delete or overwrite a self-updated tree.
+Wrapper 0.2.x upgrades only a complete, exact v0.1.6 LFS 0.7G immutable payload. It preserves files outside both immutable manifests and swaps the verified new tree atomically. A player file that collides with a newly added stock path is retained by content hash under `~/.local/share/lfs-linux/migration-conflicts/`. If the old stock payload drifted, repair it with immutable v0.1.6 first. If `LFS.exe` has an unknown digest, keep a backup and wait for a wrapper release that audits that exact upstream build. Do not delete or overwrite a self-updated tree.
 
 ## Wine runtime problem
 
-Wrapper 0.2.0 accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
+Wrapper 0.2.x accepts only the complete audited Arch Wine 11.15-1 payload. It uses that exact system package or provisions the pinned archive privately. Back up the state directory before manual recovery:
 
 ```bash
 cp -a ~/.local/share/lfs-linux ~/lfs-linux-backup

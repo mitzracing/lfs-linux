@@ -96,8 +96,8 @@ a { color: inherit; }
 .sub-nav { background: #191b1f; border-bottom: 1px solid #383c41; }
 .sub-nav .nav-row { gap: 31px; padding: 9px 15px; color: var(--cyan); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 
-.page-grid { display: grid; grid-template-columns: minmax(0, 720px) 300px; gap: 20px; padding-block: 20px 48px; }
-.main-column, .side-column { display: grid; align-content: start; gap: 20px; }
+.page-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; padding-block: 20px 48px; }
+.main-column, .side-column { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 20px; }
 .race-card {
   position: relative;
   min-height: 330px;
@@ -147,8 +147,8 @@ h1 { margin: 0; font-size: clamp(36px, 7vw, 58px); letter-spacing: -.045em; line
 .panel-heading h2 span { color: var(--orange); }
 .panel-heading small { font-weight: 700; }
 .panel-body { padding: 18px; background: var(--paper); color: var(--text); }
-.install-steps { display: grid; gap: 0; }
-.install-steps article { display: grid; grid-template-columns: 42px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid #c2c3c5; }
+.install-steps { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.install-steps article { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #c2c3c5; }
 .install-steps article:first-child { padding-top: 0; }
 .step-number { display: grid; width: 34px; height: 34px; place-items: center; background: #292c2f; color: var(--orange); font-size: 18px; font-weight: 800; }
 .panel-body h3 { margin: 0 0 5px; font-size: 16px; }

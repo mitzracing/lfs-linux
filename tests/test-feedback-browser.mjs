@@ -119,6 +119,72 @@ try {
   }
   assert.ok(ready, "website feedback script did not initialize");
 
+  const readLayout = async (width) => {
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width,
+      height: 1000,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    const result = await client.send("Runtime.evaluate", {
+      expression: `(() => {
+        const bounds = (selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+        };
+        const main = document.querySelector('.main-column');
+        const mainRect = main.getBoundingClientRect();
+        const mainOverflow = [...main.querySelectorAll('*')].filter((element) => {
+          const rect = element.getBoundingClientRect();
+          if (!rect.width || (rect.left >= mainRect.left - 0.5 && rect.right <= mainRect.right + 0.5)) return false;
+          for (let ancestor = element.parentElement; ancestor && ancestor !== main; ancestor = ancestor.parentElement) {
+            const ancestorRect = ancestor.getBoundingClientRect();
+            const overflow = getComputedStyle(ancestor).overflowX;
+            if (['auto', 'hidden', 'scroll', 'clip'].includes(overflow)
+              && ancestorRect.left >= mainRect.left - 0.5
+              && ancestorRect.right <= mainRect.right + 0.5) return false;
+          }
+          return true;
+        }).map((element) => element.tagName + (element.className ? '.' + String(element.className).replaceAll(' ', '.') : ''));
+        return {
+          page: bounds('.page-grid'),
+          main: bounds('.main-column'),
+          mainOverflow,
+          mainPanels: [...main.children].map((panel) => {
+            const rect = panel.getBoundingClientRect();
+            return { left: rect.left, right: rect.right };
+          }),
+          side: bounds('.side-column'),
+          sidePanels: [...document.querySelectorAll('.side-panel')].map((panel) => {
+            const rect = panel.getBoundingClientRect();
+            return { left: rect.left, right: rect.right };
+          }),
+        };
+      })()`,
+      returnByValue: true,
+    });
+    return result.result.value;
+  };
+
+  for (const width of [1440, 1024, 800]) {
+    const layout = await readLayout(width);
+    assert.ok(Math.abs(layout.main.top - layout.side.top) < 1, `columns not aligned at ${width}px`);
+    assert.ok(layout.main.right <= layout.side.left + 0.5, `main column overlaps sidebar at ${width}px`);
+    assert.ok(
+      layout.mainPanels.every((panel) => panel.left >= layout.main.left - 0.5 && panel.right <= layout.main.right + 0.5),
+      `main panel escapes its column at ${width}px`,
+    );
+    assert.deepEqual(layout.mainOverflow, [], `main descendant escapes its column at ${width}px: ${layout.mainOverflow.join(', ')}`);
+    assert.ok(layout.side.right <= layout.page.right + 0.5, `sidebar escapes page grid at ${width}px`);
+    assert.ok(
+      layout.sidePanels.every((panel) => panel.left >= layout.side.left - 0.5 && panel.right <= layout.side.right + 0.5),
+      `sidebar panel escapes its column at ${width}px`,
+    );
+  }
+
+  const stackedLayout = await readLayout(760);
+  assert.ok(stackedLayout.side.top >= stackedLayout.main.bottom, "sidebar does not stack below main content at 760px");
+
   const evaluated = await client.send("Runtime.evaluate", {
     expression: `(() => {
       const disclosure = document.getElementById('feedback-disclosure');
@@ -196,7 +262,7 @@ try {
   assert.equal(collapsed.result.value.open, false);
   assert.equal(collapsed.result.value.focusedTag, "SUMMARY");
 
-  console.log("[PASS] real browser exercises collapsed entry, sanitization, GitHub handoff, and keyboard-safe collapse");
+  console.log("[PASS] real browser keeps main/sidebar geometry isolated and exercises safe GitHub handoff");
 } finally {
   if (client) client.close();
   browser.kill("SIGTERM");

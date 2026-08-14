@@ -1,5 +1,5 @@
 pkgname=live-for-speed-linux
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='Unofficial launcher for the LFS 0.8C19 new-graphics public test'
 arch=('x86_64')
@@ -36,7 +36,7 @@ optdepends=(
 install=live-for-speed-linux.install
 _source_name='live-for-speed-linux'
 source=("$_source_name-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_source_name-$pkgver.tar.gz")
-sha256sums=('30269a41f8bbb98c6027cd1e4a68ecd12e8e33d4cf219208be250a3b5ee226a3')
+sha256sums=('1d0f37ce64c17962fd927ddf9adc3311f191df6a4f7f9aa17f00b0cfe14ca152')
 
 package() {
   cd "$srcdir/$_source_name-$pkgver"
