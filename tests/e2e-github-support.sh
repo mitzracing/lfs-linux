@@ -122,12 +122,13 @@ else:
 PY
 }
 
-node - "$ROOT_DIR/website/feedback.js" "$ROOT_DIR/VERSION" >"$TMP_ROOT/handoff.json" <<'NODE'
+node - "$ROOT_DIR/website/feedback.js" "$ROOT_DIR/VERSION" "$RUN_STAMP" >"$TMP_ROOT/handoff.json" <<'NODE'
 const feedback = require(process.argv[2]);
 const version = require("node:fs").readFileSync(process.argv[3], "utf8").trim();
+const runStamp = process.argv[4];
 const plan = feedback.buildHandoff({
   kind: "compatibility",
-  summary: "Website handoff and contributor flow verification",
+  summary: `Website handoff and contributor flow verification ${runStamp}`,
   distribution: "Manjaro Linux",
   distributionVersion: "Synthetic E2E environment",
   packageMethod: "deterministic source archive",
@@ -295,7 +296,7 @@ gh api --method DELETE "repos/$REPOSITORY/git/refs/heads/$BRANCH" >/dev/null
 branch_created=0
 pull_request=''
 
-sensitive_title='[E2E] Synthetic sensitive-ticket quarantine verification'
+sensitive_title="[E2E] Synthetic sensitive-ticket quarantine verification $RUN_STAMP"
 cat >"$TMP_ROOT/sensitive-body.md" <<'EOF'
 ### Linux distribution
 
