@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install validation tools
-        run: sudo apt-get update && sudo apt-get install -y appstream desktop-file-utils libxml2-utils shellcheck
+      - name: Install validation tools and runtime-test dependencies
+        run: sudo apt-get update && sudo apt-get install -y appstream curl desktop-file-utils libarchive-tools libxml2-utils python3 7zip shellcheck
       - name: Run static and unit checks
         run: make test
       - name: Build staged install
