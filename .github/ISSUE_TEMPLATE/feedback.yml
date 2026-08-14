@@ -1,0 +1,54 @@
+name: General player feedback
+description: Share what worked, what was confusing, or what should improve.
+title: "[Feedback]: "
+labels:
+  - type:feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No programming knowledge is required. Clear player experience helps maintainers choose useful work.
+
+        This feedback is public. Do not include credentials, full home paths, registry files, or proprietary game files.
+  - type: dropdown
+    id: experience
+    attributes:
+      label: Experience stage
+      options:
+        - Reading the website
+        - Installing the wrapper
+        - First launch
+        - Later launch
+        - Repair or diagnostics
+        - Playing Live for Speed
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked well?
+    validations:
+      required: true
+  - type: textarea
+    id: improve
+    attributes:
+      label: What should improve?
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Distribution and desktop (optional)
+      placeholder: "For example: Manjaro KDE on X11"
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe what a better experience looks like.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-data check
+      options:
+        - label: I removed passwords, unlock codes, account data, registry files, full home paths, and proprietary files.
+          required: true

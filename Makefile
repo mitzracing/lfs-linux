@@ -26,6 +26,8 @@ install:
 test:
 	./tests/test-public-static.sh
 	./tests/test-public-core.sh
+	python3 tests/test-support-static.py
+	python3 tests/test-triage-feedback.py
 	./tests/test-website.sh
 	./tests/test-release-archive.sh
 

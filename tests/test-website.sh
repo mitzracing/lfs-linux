@@ -43,10 +43,13 @@ assert audit.title == 1, audit.title
 assert audit.viewport == 1, audit.viewport
 assert audit.scripts == 0, audit.scripts
 assert set(audit.images) == {"icon.svg"}, audit.images
-assert {"top", "install", "trust"} <= audit.ids, audit.ids
+assert {"top", "install", "support", "trust"} <= audit.ids, audit.ids
 assert all(link.startswith(("#", "https://")) for link in audit.links), audit.links
 assert "not affiliated with or endorsed" in text
 assert "No game binaries" in text
+assert "GitHub sign-in is required" in text
+assert "issues/new?template=bug.yml" in text
+assert 'label%3A%22help+wanted%22' in text
 assert "lfs.net" not in " ".join(audit.images)
 PY
 

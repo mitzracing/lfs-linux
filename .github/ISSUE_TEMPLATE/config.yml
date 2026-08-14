@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/mitzracing/live-for-speed-linux/security/advisories/new
+    about: Report credentials, code execution, unsafe updates, or other sensitive security problems privately.
+  - name: Troubleshooting guide
+    url: https://github.com/mitzracing/live-for-speed-linux/blob/main/docs/TROUBLESHOOTING.md
+    about: Check known setup, Wine, DXVK, and removal guidance before you report a problem.

@@ -1,0 +1,88 @@
+name: Distribution compatibility report
+description: Report results from a Linux distribution that needs validation or support.
+title: "[Compatibility]: "
+labels:
+  - type:compatibility
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Distribution reports help contributors improve packaging without changing the verified game runtime.
+
+        This report is public. Do not include credentials, full home paths, registry files, or proprietary game files.
+  - type: dropdown
+    id: distribution
+    attributes:
+      label: Linux distribution
+      options:
+        - Arch Linux
+        - Manjaro Linux
+        - Another Arch-based distribution
+        - Debian or Ubuntu based
+        - Fedora based
+        - openSUSE based
+        - Another distribution
+    validations:
+      required: true
+  - type: input
+    id: distribution_version
+    attributes:
+      label: Distribution and version
+      placeholder: "For example: Fedora Linux 43"
+    validations:
+      required: true
+  - type: input
+    id: package_method
+    attributes:
+      label: Installation method
+      placeholder: "For example: source archive, AUR helper, or local package"
+    validations:
+      required: true
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop and display session
+      placeholder: "For example: GNOME 49 on Wayland"
+    validations:
+      required: true
+  - type: input
+    id: graphics
+    attributes:
+      label: GPU and driver
+      placeholder: "For example: AMD RX 7800 XT, Mesa 26.1"
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Compatibility result
+      description: State what worked, what failed, and the first failing command.
+    validations:
+      required: true
+  - type: textarea
+    id: missing_dependencies
+    attributes:
+      label: Package or dependency differences
+      description: List package names that differ from the documented requirements.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Give the shortest clean sequence that shows the result.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Paste relevant text only after you remove personal data. Do not upload files.
+      render: text
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-data check
+      options:
+        - label: I removed passwords, unlock codes, account data, registry files, full home paths, and proprietary files.
+          required: true
+        - label: I understand that exact Wine and payload pins must not be weakened for distribution compatibility.
+          required: true

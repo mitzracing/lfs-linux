@@ -2,7 +2,7 @@
 
 Unofficial community Linux launcher for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
 
-**Status:** v0.1.4 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+**Status:** v0.1.5 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
 
 This project is not affiliated with or endorsed by the Live for Speed developers.
 
@@ -117,11 +117,17 @@ Current Flathub policy accepts Wine-based Windows applications only as official 
 
 [`docs/FLATHUB.md`](docs/FLATHUB.md) defines the authorization gate and proposal path.
 
+## Help and feedback
+
+Players can use the plain-language forms in [`SUPPORT.md`](SUPPORT.md) to report bugs, distribution results, ideas, and general feedback. A GitHub account is required. No external form service stores reports.
+
+Automation classifies each ticket. Reproducible bugs and compatibility reports enter the [`help wanted` contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22). Feature requests wait for a maintainer scope decision.
+
+Never attach passwords, unlock codes, Wine registry files, full home paths, or proprietary game assets to an issue.
+
 ## Contributing
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`docs/LEGAL.md`](docs/LEGAL.md), and [`SECURITY.md`](SECURITY.md).
-
-Never attach passwords, unlock codes, Wine registry files, or proprietary game assets to an issue.
+Select a ticket from the contributor queue, comment before implementation, and open a pull request with `Closes #NUMBER`. Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`docs/TRIAGE.md`](docs/TRIAGE.md), [`docs/LEGAL.md`](docs/LEGAL.md), and [`SECURITY.md`](SECURITY.md).
 
 ## License
 

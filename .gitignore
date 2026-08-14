@@ -4,6 +4,8 @@
 /artifacts/
 
 # Local build products
+__pycache__/
+*.py[cod]
 /dist/
 /packaging/aur/pkg/
 /packaging/aur/src/

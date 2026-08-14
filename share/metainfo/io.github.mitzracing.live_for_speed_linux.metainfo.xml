@@ -28,6 +28,11 @@
     <content_attribute id="social-chat">intense</content_attribute>
   </content_rating>
   <releases>
+    <release version="0.1.5" date="2026-08-14">
+      <description>
+        <p>Add plain-language support forms, deterministic ticket triage, contributor queues, and a compact maintainer dashboard.</p>
+      </description>
+    </release>
     <release version="0.1.4" date="2026-08-14">
       <description>
         <p>Introduce the original text-free Velocity L icon for clear rendering at desktop and menu sizes.</p>

@@ -1,0 +1,60 @@
+name: Feature request
+description: Describe a player problem and a small improvement that can solve it.
+title: "[Feature]: "
+labels:
+  - type:feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the player problem. A maintainer reviews scope before contributors implement the request.
+
+        This request is public. Do not include passwords or private data. Do not request game-file patches, unlock tools, official artwork, or a launcher daemon in the game path.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Player problem
+      description: Explain who has this problem and when it occurs.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Describe the smallest useful behavior change.
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: User value
+      description: Explain how the change improves setup, reliability, compatibility, or support.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List current workarounds or simpler options.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Project area
+      options:
+        - Setup or repair
+        - Desktop experience
+        - Distribution packaging
+        - Diagnostics or support
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Project boundaries
+      options:
+        - label: This request does not require modified or redistributed Live for Speed files.
+          required: true
+        - label: I understand that implementation starts only after maintainer review.
+          required: true

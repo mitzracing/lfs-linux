@@ -1,0 +1,25 @@
+name: Feedback triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: feedback-triage-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Classify ticket and add contributor guidance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/triage-feedback.py --apply "$GITHUB_EVENT_PATH"

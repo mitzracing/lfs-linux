@@ -11,12 +11,14 @@ readonly ARCHIVE_NAME="$PROJECT_SLUG-$VERSION.tar.gz"
 readonly OUTPUT_DIR="${1:-$ROOT_DIR/dist}"
 readonly SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-1786665600}"
 readonly -a ENTRIES=(
+  .github
   VERSION
   LICENSE
   Makefile
   README.md
   CONTRIBUTING.md
   SECURITY.md
+  SUPPORT.md
   bin
   libexec
   share

@@ -16,6 +16,8 @@ Do not commit:
 
 ## Development setup
 
+Tests require Bash, Python 3 with PyYAML, ShellCheck, desktop-file-utils, AppStream, and libxml2 tools.
+
 Run static checks:
 
 ```bash
@@ -43,6 +45,14 @@ export XAUTHORITY="$XDG_RUNTIME_DIR/xephyr-111-desktop/Xauthority"
 ```
 
 Contributors can use another isolated display when `:111` is unavailable, but must record it in test evidence. Do not use nested-display frame rates as native performance evidence.
+
+## Select contributor work
+
+1. Open the [`help wanted` queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+2. Reproduce the report.
+3. Comment that you plan to work on it. A maintainer assignment is not required.
+4. Do not implement a feature ticket while it has `status:needs-maintainer`.
+5. Open a pull request with `Closes #NUMBER` after the focused checks pass.
 
 ## Change process
 
@@ -73,4 +83,6 @@ Do not auto-merge game or runtime pin updates.
 
 ## Issue reports
 
-Attach the latest wrapper log only after you inspect it for personal data. Never attach Wine registry files or LFS unlock data.
+Use the player forms in [`SUPPORT.md`](SUPPORT.md). Attach the latest wrapper log only after you inspect it for personal data. Never attach Wine registry files or LFS unlock data.
+
+The triage automation and maintainer dashboard are documented in [`docs/TRIAGE.md`](docs/TRIAGE.md).

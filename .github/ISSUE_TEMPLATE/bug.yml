@@ -1,0 +1,90 @@
+name: Game or launcher problem
+description: Report a reproducible problem. No programming knowledge is required.
+title: "[Bug]: "
+labels:
+  - type:bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Live for Speed Linux. This report is public.
+
+        Do not include passwords, unlock codes, account data, Wine registry files, full home paths, or proprietary game files.
+  - type: dropdown
+    id: distribution
+    attributes:
+      label: Linux distribution
+      options:
+        - Arch Linux
+        - Manjaro Linux
+        - Another distribution
+    validations:
+      required: true
+  - type: input
+    id: distribution_version
+    attributes:
+      label: Distribution version
+      placeholder: "For example: Manjaro 26.0 or Arch rolling"
+    validations:
+      required: true
+  - type: input
+    id: wrapper_version
+    attributes:
+      label: Wrapper version
+      description: Run `lfs-linux status` and copy only the Wrapper line.
+      placeholder: "For example: 0.1.4"
+    validations:
+      required: true
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop and display session
+      placeholder: "For example: KDE Plasma 6 on X11"
+    validations:
+      required: true
+  - type: input
+    id: graphics
+    attributes:
+      label: GPU and driver
+      placeholder: "For example: NVIDIA RTX 3070, driver 580.82"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: State the visible result and the exact error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Give one action per numbered step.
+      placeholder: |
+        1. Open Live for Speed Linux.
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Paste relevant `lfs-linux doctor` lines after you remove personal data. Do not upload files.
+      render: text
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-data check
+      options:
+        - label: I removed passwords, unlock codes, account data, registry files, full home paths, and proprietary files.
+          required: true
+        - label: I searched open issues for the same problem.
+          required: true
