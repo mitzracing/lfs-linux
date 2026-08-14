@@ -1,6 +1,6 @@
 # Legal and Upstream Boundary
 
-Live for Speed Linux Launcher is an independent community wrapper. It is not affiliated with or endorsed by the Live for Speed developers.
+Live for Speed Linux is an independent community launcher. It is not affiliated with or endorsed by the Live for Speed developers.
 
 ## What this repository distributes
 

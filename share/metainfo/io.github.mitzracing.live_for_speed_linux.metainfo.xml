@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.mitzracing.live_for_speed_linux_launcher</id>
-  <name>Live for Speed Linux Launcher</name>
+  <id>io.github.mitzracing.live_for_speed_linux</id>
+  <name>Live for Speed Linux</name>
   <summary>Unofficial community Linux launcher for Live for Speed</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <developer id="io.github.mitzracing">
-    <name>Live for Speed Linux Launcher contributors</name>
+    <name>Live for Speed Linux contributors</name>
   </developer>
   <description>
-    <p>Live for Speed Linux Launcher installs and runs the untouched official Live for Speed Windows build in an isolated per-user Wine prefix.</p>
+    <p>Live for Speed Linux is an unofficial community launcher for the untouched official Live for Speed Windows build.</p>
     <p>On first launch, one informed setup prompt downloads official files, verifies every immutable game and Wine runtime file, configures exact Wine 11.15-1 and DXVK, and starts the game. Later launches use the direct low-overhead path.</p>
     <p>Live for Speed is proprietary software from Scawen Roberts, Eric Bailey, and Victor van Vlaardingen. This community wrapper is not affiliated with or endorsed by the Live for Speed developers.</p>
   </description>
-  <url type="homepage">https://github.com/mitzracing/live-for-speed-linux-launcher</url>
-  <url type="bugtracker">https://github.com/mitzracing/live-for-speed-linux-launcher/issues</url>
-  <url type="help">https://github.com/mitzracing/live-for-speed-linux-launcher#readme</url>
-  <launchable type="desktop-id">io.github.mitzracing.live_for_speed_linux_launcher.desktop</launchable>
+  <url type="homepage">https://github.com/mitzracing/live-for-speed-linux</url>
+  <url type="bugtracker">https://github.com/mitzracing/live-for-speed-linux/issues</url>
+  <url type="help">https://github.com/mitzracing/live-for-speed-linux#readme</url>
+  <launchable type="desktop-id">io.github.mitzracing.live_for_speed_linux.desktop</launchable>
   <provides>
     <binary>lfs-linux</binary>
     <binary>lfs-linux-desktop</binary>
@@ -28,9 +28,14 @@
     <content_attribute id="social-chat">intense</content_attribute>
   </content_rating>
   <releases>
+    <release version="0.1.3" date="2026-08-14">
+      <description>
+        <p>Adopt the Live for Speed Linux name and a new community-owned website design.</p>
+      </description>
+    </release>
     <release version="0.1.2" date="2026-08-14">
       <description>
-        <p>Adopt the full Live for Speed Linux Launcher name while preserving the command and player state paths.</p>
+        <p>Adopt a descriptive public name while preserving the command and player state paths.</p>
       </description>
     </release>
     <release version="0.1.1" date="2026-08-14">

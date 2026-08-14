@@ -45,7 +45,7 @@ The AUR recipe uses the deterministic archive created by `make release-archive`,
 
 1. Run `make release-archive` twice and compare SHA-256 digests.
 2. Confirm the digest equals `packaging/aur/PKGBUILD`.
-3. Upload that exact archive as `live-for-speed-linux-launcher-<version>.tar.gz` on the matching GitHub release.
+3. Upload that exact archive as `live-for-speed-linux-<version>.tar.gz` on the matching GitHub release.
 4. Run `makepkg --verifysource`.
 5. Run `makepkg --cleanbuild --syncdeps` in a clean Arch environment.
 6. Run `namcap` when available.

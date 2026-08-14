@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - website/**
-      - share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux_launcher.svg
+      - share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux.svg
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p _site
           cp website/index.html website/styles.css _site/
-          cp share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux_launcher.svg _site/icon.svg
+          cp share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux.svg _site/icon.svg
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

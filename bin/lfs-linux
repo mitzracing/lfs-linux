@@ -35,7 +35,7 @@ fi
 fail() {
   printf '%s: %s\n' "$PROGRAM_NAME" "$*" >&2
   if [[ -n "${DISPLAY:-}" ]] && command -v notify-send >/dev/null 2>&1; then
-    notify-send --app-name='Live for Speed Linux Launcher' 'Live for Speed Linux Launcher' "$*" 2>/dev/null || true
+    notify-send --app-name='Live for Speed Linux' 'Live for Speed Linux' "$*" 2>/dev/null || true
   fi
   exit 1
 }

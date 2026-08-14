@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate deterministic file/link manifests for Live for Speed Linux Launcher payloads."""
+"""Generate deterministic file/link manifests for Live for Speed Linux payloads."""
 
 from __future__ import annotations
 

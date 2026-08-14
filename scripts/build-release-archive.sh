@@ -6,7 +6,7 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly ROOT_DIR
 VERSION="$(<"$ROOT_DIR/VERSION")"
 readonly VERSION
-readonly PROJECT_SLUG='live-for-speed-linux-launcher'
+readonly PROJECT_SLUG='live-for-speed-linux'
 readonly ARCHIVE_NAME="$PROJECT_SLUG-$VERSION.tar.gz"
 readonly OUTPUT_DIR="${1:-$ROOT_DIR/dist}"
 readonly SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-1786665600}"

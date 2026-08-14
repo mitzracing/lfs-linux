@@ -58,11 +58,11 @@ wine_runtime_manifest="$ROOT_DIR/share/lfs-linux/$WINE_RUNTIME_MANIFEST_NAME"
 "$ROOT_DIR/bin/lfs-linux" help | grep -Fq 'verify-sources'
 "$ROOT_DIR/bin/lfs-linux" help | grep -Fq 'remove'
 
-desktop-file-validate "$ROOT_DIR/share/applications/io.github.mitzracing.live_for_speed_linux_launcher.desktop"
+desktop-file-validate "$ROOT_DIR/share/applications/io.github.mitzracing.live_for_speed_linux.desktop"
 if command -v appstreamcli >/dev/null 2>&1; then
-  appstreamcli validate --no-net "$ROOT_DIR/share/metainfo/io.github.mitzracing.live_for_speed_linux_launcher.metainfo.xml"
+  appstreamcli validate --no-net "$ROOT_DIR/share/metainfo/io.github.mitzracing.live_for_speed_linux.metainfo.xml"
 else
-  xmllint --noout "$ROOT_DIR/share/metainfo/io.github.mitzracing.live_for_speed_linux_launcher.metainfo.xml"
+  xmllint --noout "$ROOT_DIR/share/metainfo/io.github.mitzracing.live_for_speed_linux.metainfo.xml"
 fi
 
 # No privileged game install and no hidden auto-update path.
@@ -91,7 +91,7 @@ fi
 
 if [[ "${LFS_LINUX_SOURCE_ARCHIVE:-0}" != '1' ]]; then
   # Flathub stays policy-gated until upstream authorization.
-  [[ ! -e "$ROOT_DIR/packaging/flathub/io.github.mitzracing.live_for_speed_linux_launcher.yml" ]]
+  [[ ! -e "$ROOT_DIR/packaging/flathub/io.github.mitzracing.live_for_speed_linux.yml" ]]
   grep -Fq 'No Flatpak manifest exists here by design.' "$ROOT_DIR/packaging/flathub/README.md"
 
   # AUR recipe must use the exact audited Wine and a pinned project release asset.
