@@ -58,6 +58,14 @@ wine_runtime_manifest="$ROOT_DIR/share/lfs-linux/$WINE_RUNTIME_MANIFEST_NAME"
 "$ROOT_DIR/bin/lfs-linux" help | grep -Fq 'verify-sources'
 "$ROOT_DIR/bin/lfs-linux" help | grep -Fq 'remove'
 
+community_icon="$ROOT_DIR/share/icons/hicolor/scalable/apps/io.github.mitzracing.live_for_speed_linux.svg"
+(( $(stat -c %s "$community_icon") < 4096 ))
+xmllint --noout "$community_icon"
+if grep -Eq '<(text|image|script)([[:space:]]|>)|href=' "$community_icon"; then
+  printf 'community icon contains text, scripts, or external assets\n' >&2
+  exit 1
+fi
+
 desktop-file-validate "$ROOT_DIR/share/applications/io.github.mitzracing.live_for_speed_linux.desktop"
 if command -v appstreamcli >/dev/null 2>&1; then
   appstreamcli validate --no-net "$ROOT_DIR/share/metainfo/io.github.mitzracing.live_for_speed_linux.metainfo.xml"
