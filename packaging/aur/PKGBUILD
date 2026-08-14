@@ -32,7 +32,7 @@ optdepends=(
 )
 install=lfs-linux.install
 source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
-sha256sums=('8419ac3f6d5b2840910ecd2154030cdfa2414fbeccca26536565d0a10e87d48a')
+sha256sums=('27aacf9848fc6c1912855cfdf2b02e374e3b7bca419ff7c489382f9a66f1dc56')
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"

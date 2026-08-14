@@ -266,7 +266,7 @@ game_processes() {
   local pid command_line command_name
   while IFS= read -r pid; do
     command_name="$(cat "/proc/$pid/comm" 2>/dev/null || true)"
-    command_line="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+    command_line="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
     if [[ "${command_name,,}" == 'lfs.exe' || "${command_line,,}" == *'lfs.exe'* ]]; then
       printf '%s\n' "$pid"
     fi
@@ -345,7 +345,7 @@ validate_existing_game_source() {
 }
 
 game_tree_is_complete() {
-  local root="${1:-$GAME_DIR}" file_count tree_bytes
+  local root="$GAME_DIR" file_count tree_bytes
   payload_manifest_check "$root" "$LFS_STOCK_MANIFEST" \
     "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES" >/dev/null || return 1
   file_matches "$root/LFS.exe" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256" || return 1
@@ -358,7 +358,7 @@ game_tree_is_complete() {
 }
 
 game_tree_layout_is_complete() {
-  local root="${1:-$GAME_DIR}" file_count tree_bytes
+  local root="$GAME_DIR" file_count tree_bytes
   payload_manifest_check "$root" "$LFS_STOCK_MANIFEST" \
     "$LFS_STOCK_MANIFEST_SIZE" "$LFS_STOCK_MANIFEST_SHA256" "$LFS_STOCK_MANIFEST_ENTRIES" layout >/dev/null || return 1
   file_matches "$root/LFS.exe" "$LFS_EXE_SIZE" "$LFS_EXE_SHA256" || return 1
@@ -565,12 +565,16 @@ launch_game() {
   lock_file="$LOCK_DIR/launch.lock"
   exec 9>"$lock_file"
   if ! flock -n 9; then
-    command -v wmctrl >/dev/null 2>&1 && wmctrl -a 'Live for Speed' 2>/dev/null || true
+    if command -v wmctrl >/dev/null 2>&1; then
+      wmctrl -a 'Live for Speed' 2>/dev/null || true
+    fi
     note 'LFS is already launching or running'
     return
   fi
   if game_is_running; then
-    command -v wmctrl >/dev/null 2>&1 && wmctrl -a 'Live for Speed' 2>/dev/null || true
+    if command -v wmctrl >/dev/null 2>&1; then
+      wmctrl -a 'Live for Speed' 2>/dev/null || true
+    fi
     note 'LFS is already running'
     return
   fi

@@ -15,7 +15,9 @@ elif [[ -x "$SELF_DIR/../lib/lfs-linux/lfs-linux-core" ]]; then
   LIBEXEC_DIR="$(cd -- "$SELF_DIR/../lib/lfs-linux" && pwd)"
   readonly LIBEXEC_DIR
 else
-  LIBEXEC_DIR="$(cd -- "$SELF_DIR/../libexec" 2>/dev/null && pwd || true)"
+  if ! LIBEXEC_DIR="$(cd -- "$SELF_DIR/../libexec" 2>/dev/null && pwd)"; then
+    LIBEXEC_DIR=''
+  fi
   readonly LIBEXEC_DIR
 fi
 
@@ -24,7 +26,9 @@ if [[ -n "${LFS_LINUX_DATA_DIR:-}" ]]; then
 elif [[ -f "$DEFAULT_DATA/release.env" ]]; then
   readonly SYSTEM_DATA_DIR="$DEFAULT_DATA"
 else
-  SYSTEM_DATA_DIR="$(cd -- "$SELF_DIR/../share/lfs-linux" 2>/dev/null && pwd || true)"
+  if ! SYSTEM_DATA_DIR="$(cd -- "$SELF_DIR/../share/lfs-linux" 2>/dev/null && pwd)"; then
+    SYSTEM_DATA_DIR=''
+  fi
   readonly SYSTEM_DATA_DIR
 fi
 
