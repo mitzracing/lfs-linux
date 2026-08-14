@@ -2,7 +2,7 @@
 
 Unofficial community Linux launcher for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
 
-**Status:** v0.1.5 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+**Status:** v0.1.6 public source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
 
 This project is not affiliated with or endorsed by the Live for Speed developers.
 
@@ -119,9 +119,9 @@ Current Flathub policy accepts Wine-based Windows applications only as official 
 
 ## Help and feedback
 
-Players can use the plain-language forms in [`SUPPORT.md`](SUPPORT.md) to report bugs, distribution results, ideas, and general feedback. A GitHub account is required. No external form service stores reports.
+Players can use the plain-language browser form on the [project website](https://mitzracing.github.io/live-for-speed-linux/#support) or the direct forms in [`SUPPORT.md`](SUPPORT.md). The browser removes known private-data patterns before it opens a prefilled GitHub Issue Form. A GitHub account is required. No external form service stores reports.
 
-Automation classifies each ticket. Reproducible bugs and compatibility reports enter the [`help wanted` contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22). Feature requests wait for a maintainer scope decision.
+Automation classifies each ticket. Reproducible, sanitized bugs and compatibility reports enter the [`help wanted` contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22). Feature requests wait for a maintainer scope decision. Suspected-sensitive reports stay out of contributor work until reviewed.
 
 Never attach passwords, unlock codes, Wine registry files, full home paths, or proprietary game assets to an issue.
 

@@ -1,5 +1,5 @@
 pkgname=live-for-speed-linux
-pkgver=0.1.5
+pkgver=0.1.6
 pkgrel=1
 pkgdesc='Unofficial community Linux launcher for Live for Speed'
 arch=('x86_64')
@@ -36,7 +36,7 @@ optdepends=(
 install=live-for-speed-linux.install
 _source_name='live-for-speed-linux'
 source=("$_source_name-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_source_name-$pkgver.tar.gz")
-sha256sums=('eb1bf0ebd94906348d5bb9f9cf72c8e8ad87d5db2030caa50b2ff0ba911fc889')
+sha256sums=('830d09f11d6522a66962212dfd5885250b7bad8e86eb8a1f571c1898c1ae6bcf')
 
 package() {
   cd "$srcdir/$_source_name-$pkgver"

@@ -10,8 +10,8 @@ No external support service, feedback database, scheduled worker, or anonymous s
 
 - [Pull requests to review](https://github.com/mitzracing/live-for-speed-linux/pulls?q=is%3Apr+is%3Aopen)
 - [Maintainer decisions](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aneeds-maintainer%22)
-- [Contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-- [Reports that need reproduction](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aneeds-reproduction%22)
+- [Contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22)
+- [Reports that need reproduction](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aneeds-reproduction%22+-label%3A%22status%3Apossible-sensitive%22)
 - [Possible sensitive data](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Apossible-sensitive%22)
 
 These searches are the maintainer dashboard. They stay current without a scheduled digest issue.
@@ -25,12 +25,13 @@ These searches are the maintainer dashboard. They stay current without a schedul
 | Feature | `status:needs-maintainer` | Wait for scope approval |
 | Feedback | `status:needs-maintainer` | Wait for a maintainer decision |
 | Unknown | `status:needs-maintainer` | Wait for classification |
+| Any suspected-sensitive report | `status:possible-sensitive`, `status:needs-maintainer` | Do not open or continue contributor work |
 
-Distribution forms also receive an Arch, Manjaro, or other-distribution label. Strong secret-like patterns add `status:possible-sensitive` for immediate review.
+Distribution forms also receive an Arch, Manjaro, or other-distribution label. Known credential, identity, home-path, and registry patterns add `status:possible-sensitive` and `status:needs-maintainer`. Sensitive reports do not receive `help wanted` or `status:needs-reproduction`; opening or editing a report also removes those labels if they are present. Editing out the text does not clear quarantine automatically. A maintainer must review the public history first.
 
 ## Contributor pull workflow
 
-1. Open the [contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+1. Open the [sanitized contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22).
 2. Reproduce the report.
 3. Comment that you plan to work on it. No maintainer assignment is required.
 4. Keep the change inside the wrapper boundary.

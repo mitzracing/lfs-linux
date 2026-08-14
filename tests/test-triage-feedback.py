@@ -18,8 +18,9 @@ TRIAGE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(TRIAGE)
 
 
-def event(labels: list[str], body: str = "", number: int = 42) -> dict:
+def event(labels: list[str], body: str = "", number: int = 42, action: str = "opened") -> dict:
     return {
+        "action": action,
         "repository": {"full_name": "mitzracing/live-for-speed-linux"},
         "issue": {
             "number": number,
@@ -37,6 +38,7 @@ class CaptureHandler(BaseHTTPRequestHandler):
         payload = json.loads(self.rfile.read(length))
         self.__class__.requests.append(
             {
+                "method": "POST",
                 "path": self.path,
                 "authorization": self.headers.get("Authorization"),
                 "payload": payload,
@@ -46,6 +48,18 @@ class CaptureHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(b"{}")
+
+    def do_DELETE(self) -> None:
+        self.__class__.requests.append(
+            {
+                "method": "DELETE",
+                "path": self.path,
+                "authorization": self.headers.get("Authorization"),
+                "payload": None,
+            }
+        )
+        self.send_response(204)
+        self.end_headers()
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -90,9 +104,80 @@ class FeedbackTriageTest(unittest.TestCase):
         secret = "ghp_" + "abcdefghijklmnopqrstuvwxyz" + "0123456789"
         plan = TRIAGE.build_plan(event(["type:feedback"], f"### Notes\n\n{secret}"))
         self.assertTrue(plan["sensitive"])
-        self.assertIn("status:possible-sensitive", plan["labels"])
+        self.assertEqual(
+            plan["labels"],
+            ["status:needs-maintainer", "status:possible-sensitive"],
+        )
+        self.assertNotIn("help wanted", plan["labels"])
         self.assertNotIn(secret, json.dumps(plan))
-        self.assertIn("Possible sensitive data", plan["comments"][0])
+        self.assertIn("withheld from the contributor queue", plan["comments"][0])
+
+    def test_all_documented_sensitive_categories_are_detected(self) -> None:
+        examples = {
+            "linux home": "/home/alice/.local/share/lfs-linux/install.env",
+            "mac home": "/Users/alice/Library/Application Support/LFS",
+            "windows home": r"C:\Users\Alice\AppData\Local\LFS",
+            "registry": "WINE REGISTRY Version 2\n[HKEY_CURRENT_USER\\Software\\LFS]",
+            "email": "driver report: alice@example.invalid",
+            "cookie": "cookie=session-value-that-must-not-be-public",
+            "unlock": "unlock code: 123456789",
+            "machine": "machine-id=0123456789abcdef",
+            "private key": "-----BEGIN " + "PRIVATE KEY-----\nnot-a-real-key\n-----END PRIVATE KEY-----",
+        }
+        for category, body in examples.items():
+            with self.subTest(category=category):
+                plan = TRIAGE.build_plan(event(["type:bug"], f"### Diagnostics\n\n{body}"))
+                self.assertTrue(plan["sensitive"])
+                self.assertNotIn("help wanted", plan["labels"])
+                self.assertNotIn("status:needs-reproduction", plan["labels"])
+                self.assertIn("status:possible-sensitive", plan["labels"])
+                self.assertIn("status:needs-maintainer", plan["labels"])
+
+    def test_sensitive_rerun_removes_contributor_labels(self) -> None:
+        plan = TRIAGE.build_plan(
+            event(
+                ["type:bug", "help wanted", "status:needs-reproduction"],
+                "### Diagnostics\n\n/home/example/private.log",
+            )
+        )
+        self.assertEqual(plan["remove_labels"], ["help wanted", "status:needs-reproduction"])
+        self.assertNotIn("help wanted", plan["labels"])
+
+    def test_edited_quarantine_cannot_reenter_contributor_queue(self) -> None:
+        plan = TRIAGE.build_plan(
+            event(
+                ["type:bug", "status:possible-sensitive", "help wanted"],
+                "### Diagnostics\n\nThe author removed the exposed path.",
+                action="edited",
+            )
+        )
+        self.assertTrue(plan["sensitive"])
+        self.assertEqual(plan["remove_labels"], ["help wanted"])
+        self.assertNotIn("status:needs-reproduction", plan["labels"])
+        self.assertEqual(plan["comments"], [])
+
+    def test_distribution_edit_removes_stale_distribution_label(self) -> None:
+        plan = TRIAGE.build_plan(
+            event(
+                ["type:compatibility", "distro:manjaro", "help wanted", "status:needs-reproduction"],
+                "### Linux distribution\n\nArch Linux",
+                action="edited",
+            )
+        )
+        self.assertEqual(plan["labels"], ["distro:arch"])
+        self.assertEqual(plan["remove_labels"], ["distro:manjaro"])
+        self.assertEqual(plan["comments"], [])
+
+    def test_clean_edit_does_not_repeat_static_guidance(self) -> None:
+        plan = TRIAGE.build_plan(
+            event(
+                ["type:bug", "help wanted", "status:needs-reproduction"],
+                "### What happened?\n\nClarified public details.",
+                action="edited",
+            )
+        )
+        self.assertFalse(plan["sensitive"])
+        self.assertEqual(plan["comments"], [])
 
     def test_apply_posts_labels_and_static_comment_to_mock_github(self) -> None:
         CaptureHandler.requests = []
@@ -123,6 +208,42 @@ class FeedbackTriageTest(unittest.TestCase):
         self.assertEqual(comment_request["path"], "/repos/mitzracing/live-for-speed-linux/issues/42/comments")
         self.assertIn("contributor queue", comment_request["payload"]["body"])
         self.assertEqual(labels_request["authorization"], "Bearer test-token")
+
+    def test_apply_removes_queue_label_before_sensitive_comment(self) -> None:
+        CaptureHandler.requests = []
+        server = ThreadingHTTPServer(("127.0.0.1", 0), CaptureHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            source_event = event(
+                ["type:bug", "help wanted"],
+                "### Diagnostics\n\nWINE REGISTRY Version 2",
+            )
+            plan = TRIAGE.build_plan(source_event)
+            TRIAGE.apply_plan(
+                source_event,
+                plan,
+                "test-token",
+                f"http://127.0.0.1:{server.server_address[1]}",
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        self.assertEqual(
+            [request["method"] for request in CaptureHandler.requests],
+            ["DELETE", "POST", "POST"],
+        )
+        self.assertEqual(
+            CaptureHandler.requests[0]["path"],
+            "/repos/mitzracing/live-for-speed-linux/issues/42/labels/help%20wanted",
+        )
+        self.assertEqual(
+            CaptureHandler.requests[1]["payload"],
+            {"labels": ["status:needs-maintainer", "status:possible-sensitive"]},
+        )
+        self.assertIn("withheld", CaptureHandler.requests[2]["payload"]["body"])
 
     def test_cli_dry_run_matches_library_plan(self) -> None:
         source_event = event(["type:feedback"], number=7)

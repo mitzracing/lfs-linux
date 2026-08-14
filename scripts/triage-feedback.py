@@ -53,13 +53,22 @@ SENSITIVE_PATTERNS = tuple(
         r"gh[pousr]_[A-Za-z0-9_]{20,}",
         r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
         r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}",
-        r"^\s*(?:password|passwd|unlock(?:\s+code)?|authorization|cookie|token)\s*[:=]\s*\S+",
+        r"^\s*(?:password|passwd|unlock(?:\s+code)?|authorization|cookie|token|access[_ -]?key|secret|account(?:\s+(?:name|id|key))?)\s*[:=]\s*\S+",
+        r"^\s*(?:machine[- ]?id|hardware\s+serial|serial\s+number)\s*[:=]\s*\S+",
+        r"/(?:home|Users)/[^/\s]+(?:/[^\s]*)?",
+        r"\b[A-Z]:\\Users\\[^\\\s]+(?:\\[^\s]*)?",
+        r"(?:WINE REGISTRY Version|Windows Registry Editor Version|\[?HKEY_(?:CURRENT_USER|LOCAL_MACHINE|CLASSES_ROOT|USERS|CURRENT_CONFIG))",
+        r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
     )
 )
 
+QUEUE_LABELS = frozenset(("help wanted", "status:needs-reproduction"))
+DISTRO_LABELS = frozenset(("distro:arch", "distro:manjaro", "distro:other"))
 SENSITIVE_COMMENT = (
     "Possible sensitive data was detected. Edit the public report immediately and remove "
-    "credentials, unlock data, tokens, cookies, private keys, registry content, and full home paths."
+    "credentials, unlock data, tokens, cookies, private keys, registry content, email addresses, "
+    "machine identifiers, and full home paths. This ticket is withheld from the contributor queue "
+    "until a maintainer confirms that the public text is safe."
 )
 
 
@@ -121,25 +130,43 @@ def build_plan(event: dict[str, Any]) -> dict[str, Any]:
     distro = distribution_label(body)
     if distro is not None:
         labels.add(distro)
+    remove_labels = (existing & DISTRO_LABELS) - ({distro} if distro is not None else set())
 
-    sensitive = contains_sensitive_data(body)
-    comments = [comment]
+    detected_sensitive = contains_sensitive_data(body)
+    sensitive = detected_sensitive or "status:possible-sensitive" in existing
     if sensitive:
-        labels.add("status:possible-sensitive")
-        comments.insert(0, SENSITIVE_COMMENT)
+        labels.difference_update(QUEUE_LABELS)
+        labels.update(("status:possible-sensitive", "status:needs-maintainer"))
+        remove_labels.update(existing & QUEUE_LABELS)
+        comments = (
+            [SENSITIVE_COMMENT]
+            if detected_sensitive and "status:possible-sensitive" not in existing
+            else []
+        )
+    else:
+        comments = [] if event.get("action") == "edited" else [comment]
 
     return {
         "issue_number": int(issue["number"]),
         "labels": sorted(labels - existing),
+        "remove_labels": sorted(remove_labels),
         "comments": comments,
         "sensitive": sensitive,
     }
 
 
-def request_json(url: str, token: str, method: str, payload: dict[str, Any]) -> None:
+def request_json(
+    url: str,
+    token: str,
+    method: str,
+    payload: dict[str, Any] | None,
+    *,
+    ignore_not_found: bool = False,
+) -> None:
+    data = None if payload is None else json.dumps(payload, separators=(",", ":")).encode("utf-8")
     request = urllib.request.Request(
         url,
-        data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        data=data,
         method=method,
         headers={
             "Accept": "application/vnd.github+json",
@@ -154,6 +181,8 @@ def request_json(url: str, token: str, method: str, payload: dict[str, Any]) -> 
             if response.status < 200 or response.status >= 300:
                 raise RuntimeError(f"GitHub API returned HTTP {response.status}")
     except urllib.error.HTTPError as error:
+        if ignore_not_found and error.code == 404:
+            return
         raise RuntimeError(f"GitHub API returned HTTP {error.code}") from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"GitHub API request failed: {error.reason}") from error
@@ -166,6 +195,15 @@ def apply_plan(event: dict[str, Any], plan: dict[str, Any], token: str, api_url:
     issue_number = int(plan["issue_number"])
     base = f"{api_url.rstrip('/')}/repos/{urllib.parse.quote(repository, safe='/')}/issues/{issue_number}"
 
+    for label in plan["remove_labels"]:
+        encoded_label = urllib.parse.quote(str(label), safe="")
+        request_json(
+            f"{base}/labels/{encoded_label}",
+            token,
+            "DELETE",
+            None,
+            ignore_not_found=True,
+        )
     labels = list(plan["labels"])
     if labels:
         request_json(f"{base}/labels", token, "POST", {"labels": labels})

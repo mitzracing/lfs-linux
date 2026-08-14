@@ -7,6 +7,7 @@
   <title>Live for Speed Linux — verified community launcher</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
+  <script src="feedback.js" defer></script>
 </head>
 <body>
   <div class="utility-bar">
@@ -31,7 +32,7 @@
       </a>
       <div class="release-chip" aria-label="Current release">
         <span>WRAPPER</span>
-        <strong>0.1.5</strong>
+        <strong>0.1.6</strong>
         <small>LFS 0.7G</small>
       </div>
     </div>
@@ -101,7 +102,7 @@
               <p>The wrapper verifies the complete stock inventory before Wine starts the untouched game.</p>
             </div>
           </article>
-          <p class="publication"><strong>Publication status:</strong> v0.1.5 source is public. The AUR recipe is validated and awaits maintainer SSH access.</p>
+          <p class="publication"><strong>Publication status:</strong> v0.1.6 source is public. The AUR recipe is validated and awaits maintainer SSH access.</p>
         </div>
       </section>
 
@@ -111,28 +112,118 @@
           <small>no coding required</small>
         </header>
         <div class="panel-body support-body">
-          <p class="support-lede">Choose what you experienced. A short GitHub form turns it into a structured public ticket. Automation routes useful work without manual assignment.</p>
-          <div class="support-grid">
-            <a class="support-card" href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=bug.yml">
+          <p class="support-lede">Describe what happened here. The browser removes known private-data patterns, then opens the matching GitHub form with your text filled in. Nothing is sent until you review and submit on GitHub.</p>
+
+          <div class="support-grid" aria-label="Choose a report type">
+            <button class="support-card" type="button" data-feedback-kind="bug">
               <strong>Something broke</strong>
               <span>Report a game or launcher problem</span>
-            </a>
-            <a class="support-card" href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=compatibility.yml">
+            </button>
+            <button class="support-card" type="button" data-feedback-kind="compatibility">
               <strong>Different distribution</strong>
               <span>Share compatibility results</span>
-            </a>
-            <a class="support-card" href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feature.yml">
+            </button>
+            <button class="support-card" type="button" data-feedback-kind="feature">
               <strong>Suggest an improvement</strong>
               <span>Explain the player problem first</span>
-            </a>
-            <a class="support-card" href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feedback.yml">
+            </button>
+            <button class="support-card" type="button" data-feedback-kind="feedback">
               <strong>Share your experience</strong>
               <span>Tell us what worked or confused you</span>
-            </a>
+            </button>
           </div>
+
+          <form id="feedback-form" class="feedback-form" action="#support">
+            <div class="form-grid">
+              <label>
+                Report type
+                <select id="kind" required>
+                  <option value="bug">Something broke</option>
+                  <option value="compatibility">Distribution compatibility</option>
+                  <option value="feature">Improvement request</option>
+                  <option value="feedback">General experience</option>
+                </select>
+              </label>
+              <label>
+                Short summary
+                <input id="summary" maxlength="100" autocomplete="off" required placeholder="What should another player know?">
+              </label>
+              <label>
+                Linux distribution
+                <select id="distribution">
+                  <option value="">Not relevant</option>
+                  <option>Arch Linux</option>
+                  <option>Manjaro Linux</option>
+                  <option>Another Arch-based distribution</option>
+                  <option>Debian or Ubuntu based</option>
+                  <option>Fedora based</option>
+                  <option>openSUSE based</option>
+                  <option>Another distribution</option>
+                </select>
+              </label>
+              <label>
+                Distribution and version
+                <input id="distributionVersion" maxlength="160" autocomplete="off" placeholder="For example: Manjaro 26.0">
+              </label>
+              <label data-package-method hidden>
+                Installation method
+                <input id="packageMethod" maxlength="160" autocomplete="off" placeholder="Source archive, AUR helper, or local package">
+              </label>
+              <label data-wrapper-version>
+                Wrapper version
+                <input id="wrapperVersion" maxlength="40" autocomplete="off" placeholder="From lfs-linux status">
+              </label>
+              <label>
+                Desktop and display session
+                <input id="desktop" maxlength="160" autocomplete="off" placeholder="For example: KDE Plasma 6 on X11">
+              </label>
+              <label>
+                GPU and driver
+                <input id="graphics" maxlength="160" autocomplete="off" placeholder="For example: RTX 3070, driver 580.82">
+              </label>
+            </div>
+            <label>
+              What happened, worked, or needs improvement?
+              <textarea id="details" maxlength="1800" required placeholder="Use plain language. Include the first visible error when applicable."></textarea>
+            </label>
+            <label>
+              What result or improvement did you expect?
+              <textarea id="expected" maxlength="1200" required></textarea>
+            </label>
+            <label>
+              Reproduction, verification steps, or alternatives
+              <textarea id="steps" maxlength="1800" placeholder="Use one step per line."></textarea>
+            </label>
+            <label>
+              Desired outcome or user value
+              <textarea id="value" maxlength="1000" placeholder="Why would this help players?"></textarea>
+            </label>
+            <label>
+              Diagnostics (optional)
+              <textarea id="diagnostics" maxlength="2500" spellcheck="false" placeholder="Paste text only. The browser removes known tokens, registry data, email addresses, and full home paths."></textarea>
+            </label>
+            <label class="safety-check">
+              <input type="checkbox" id="safety" value="confirmed" required>
+              I understand the report is public. I will review the sanitized text and will not add passwords, unlock data, registry files, proprietary files, or private logs on GitHub.
+            </label>
+            <button class="button blue prepare-button" type="submit">Prepare GitHub handoff</button>
+          </form>
+
+          <div id="feedback-result" class="feedback-result" aria-live="polite" hidden>
+            <p id="feedback-status"></p>
+            <a id="github-handoff" class="button orange" href="https://github.com/mitzracing/live-for-speed-linux/issues/new" target="_blank" rel="noopener">Review and submit on GitHub</a>
+            <details>
+              <summary>Review generated text</summary>
+              <pre id="report-preview"></pre>
+            </details>
+          </div>
+
+          <p class="direct-forms">Prefer to start on GitHub? Use the direct <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=bug.yml">problem</a>, <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=compatibility.yml">compatibility</a>, <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feature.yml">improvement</a>, or <a href="https://github.com/mitzracing/live-for-speed-linux/issues/new?template=feedback.yml">experience</a> form.</p>
+          <noscript><p class="publication">JavaScript is disabled. Use one of the direct GitHub forms above and remove private data yourself.</p></noscript>
+
           <div class="queue-strip">
-            <p><strong>Players:</strong> GitHub sign-in is required. No external form service stores your report.</p>
-            <p><strong>Contributors:</strong> Select a <a href="https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22">help-wanted ticket</a>, comment, then submit a linked pull request.</p>
+            <p><strong>Players:</strong> GitHub sign-in is required. This page stores nothing and uses no external form service.</p>
+            <p><strong>Contributors:</strong> Select a <a href="https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22">sanitized help-wanted ticket</a>, comment, then submit a linked pull request.</p>
           </div>
         </div>
       </section>
@@ -170,7 +261,7 @@
       <section class="side-panel">
         <h2>RELEASE STATUS</h2>
         <div class="side-body status-list">
-          <p><span>Wrapper</span><strong>0.1.5</strong></p>
+          <p><span>Wrapper</span><strong>0.1.6</strong></p>
           <p><span>Game pin</span><strong>0.7G</strong></p>
           <p><span>Wine pin</span><strong>11.15-1</strong></p>
           <p><span>DXVK pin</span><strong>3.0.2</strong></p>
@@ -206,7 +297,7 @@
         <h2>PROJECT LINKS</h2>
         <div class="side-body link-list">
           <a href="https://github.com/mitzracing/live-for-speed-linux/blob/main/SUPPORT.md">Help and feedback</a>
-          <a href="https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22">Contributor queue</a>
+          <a href="https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22">Contributor queue</a>
           <a href="https://github.com/mitzracing/live-for-speed-linux/blob/main/docs/TRIAGE.md">Maintainer dashboard</a>
           <a href="https://github.com/mitzracing/live-for-speed-linux/releases">Releases</a>
           <a href="https://github.com/mitzracing/live-for-speed-linux/blob/main/CONTRIBUTING.md">Contribution guide</a>

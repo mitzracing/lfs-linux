@@ -16,7 +16,7 @@ Do not commit:
 
 ## Development setup
 
-Tests require Bash, Python 3 with PyYAML, ShellCheck, desktop-file-utils, AppStream, and libxml2 tools.
+Tests require Bash, Python 3 with PyYAML, Node.js, Chromium or Google Chrome, ShellCheck, desktop-file-utils, AppStream, and libxml2 tools.
 
 Run static checks:
 
@@ -48,10 +48,10 @@ Contributors can use another isolated display when `:111` is unavailable, but mu
 
 ## Select contributor work
 
-1. Open the [`help wanted` queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+1. Open the [sanitized `help wanted` queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22).
 2. Reproduce the report.
 3. Comment that you plan to work on it. A maintainer assignment is not required.
-4. Do not implement a feature ticket while it has `status:needs-maintainer`.
+4. Do not work on a ticket with `status:possible-sensitive` or `status:needs-maintainer`.
 5. Open a pull request with `Closes #NUMBER` after the focused checks pass.
 
 ## Change process

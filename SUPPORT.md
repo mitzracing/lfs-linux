@@ -4,6 +4,8 @@ Live for Speed Linux uses GitHub Issues as its public support queue. No programm
 
 A GitHub account is required because this project uses no feedback server, contact database, or third-party form service.
 
+The [website feedback generator](https://mitzracing.github.io/live-for-speed-linux/#support) keeps text in your browser, removes known sensitive-data patterns, and opens the matching GitHub Issue Form with the safe text filled in. You review the result and submit it on GitHub. The page does not save or transmit form text itself.
+
 ## Choose a report
 
 - [Game or launcher problem](https://github.com/mitzracing/live-for-speed-linux/issues/new?template=bug.yml)
@@ -15,7 +17,7 @@ The forms ask for plain-language information. They do not require code, patches,
 
 ## Public-data boundary
 
-All issue reports are public. Before submission, remove:
+All issue reports are public. The browser generator redacts known credentials, private keys, email addresses, machine identifiers, complete Linux, macOS, and Windows home paths, and registry dumps. Pattern matching cannot identify every private value. Before submission, review the generated text and remove:
 
 - passwords, unlock codes, and account data
 - complete home-directory paths
@@ -27,7 +29,7 @@ Use [private vulnerability reporting](https://github.com/mitzracing/live-for-spe
 
 ## What happens next
 
-GitHub automation classifies each ticket. Reproducible bugs and compatibility work enter the [contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) with the `help wanted` label. Feature requests wait for a maintainer scope decision.
+GitHub automation classifies each ticket. Reproducible bugs and compatibility work enter the [sanitized contributor queue](https://github.com/mitzracing/live-for-speed-linux/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22) with the `help wanted` label. Feature requests wait for a maintainer scope decision. A report with a known sensitive-data pattern is withheld from contributor work until a maintainer confirms that its public text is safe.
 
 Contributors select work from the queue, comment before implementation, and submit a pull request with `Closes #NUMBER`. Maintainers review decisions and pull requests a few times each week. No response-time guarantee applies.
 

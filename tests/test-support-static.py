@@ -50,7 +50,7 @@ assert any("security/advisories/new" in str(link.get("url", "")) for link in lin
 workflow_path = ROOT / ".github" / "workflows" / "feedback-triage.yml"
 load_yaml(workflow_path)
 workflow = workflow_path.read_text(encoding="utf-8")
-assert "issues:" in workflow and "types: [opened]" in workflow
+assert "issues:" in workflow and "types: [opened, edited]" in workflow
 assert re.search(r"^\s+issues:\s+write\s*$", workflow, re.MULTILINE)
 assert "pull_request_target" not in workflow
 assert 'triage-feedback.py --apply "$GITHUB_EVENT_PATH"' in workflow
@@ -67,10 +67,27 @@ for filename in FORMS:
     assert expected in website, expected
 assert "GitHub account is required" in support
 assert "GitHub sign-in is required" in website
-assert 'label%3A%22help+wanted%22' in support
-assert 'label%3A%22help+wanted%22' in triage
+safe_queue = 'label%3A%22help+wanted%22+-label%3A%22status%3Apossible-sensitive%22'
+assert safe_queue in support
+assert safe_queue in triage
+assert safe_queue in website
 assert "Closes #NUMBER" in support and "Closes #NUMBER" in triage
 assert "Closes #" in pull_template
 assert "scheduled" in triage.casefold()
+assert 'id="feedback-form"' in website
+assert 'src="feedback.js"' in website
+assert "removes known private-data patterns" in website
+assert "withheld from contributor work" in support
+assert "do not receive `help wanted`" in triage
 
-print("[PASS] support forms, public-data boundaries, contributor queue, and triage workflow are structurally valid")
+pages_workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+assert "website/feedback.js" in pages_workflow
+
+feedback_script = (ROOT / "website" / "feedback.js").read_text(encoding="utf-8")
+for category in ("registry content", "home path", "email address", "private key", "machine identifier"):
+    assert category.casefold() in feedback_script.casefold(), category
+assert "localStorage" not in feedback_script
+assert "fetch(" not in feedback_script
+assert "XMLHttpRequest" not in feedback_script
+
+print("[PASS] support generator, forms, privacy boundary, safe contributor queue, and triage workflow are structurally valid")
