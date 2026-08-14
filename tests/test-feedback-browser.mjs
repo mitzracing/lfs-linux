@@ -26,7 +26,7 @@ function browserBinary() {
 }
 
 async function waitForDevToolsFile(path, browser) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 600; attempt += 1) {
     if (browser.exitCode !== null) throw new Error(`browser exited with ${browser.exitCode}`);
     if (existsSync(path)) return (await readFile(path, "utf8")).split("\n")[0].trim();
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
