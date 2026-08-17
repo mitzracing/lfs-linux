@@ -2,7 +2,7 @@
 
 Unofficial community Linux launcher for the untouched official [Live for Speed](https://www.lfs.net/) Windows build.
 
-**Status:** v0.2.1 public-test source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
+**Status:** v0.2.2 public-test source release. The validated AUR recipe awaits maintainer SSH access. The core works without Steam, Bottles, Lutris, or a background launcher.
 
 This release targets exact official **LFS 0.8C19 new graphics**, which lfs.net still labels **PUBLIC TEST**. It is not represented as a stable LFS release. Use immutable [v0.1.6](https://github.com/mitzracing/live-for-speed-linux/releases/tag/v0.1.6) for the audited old-graphics 0.7G fallback.
 

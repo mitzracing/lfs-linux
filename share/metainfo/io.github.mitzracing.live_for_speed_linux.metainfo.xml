@@ -10,7 +10,7 @@
   </developer>
   <description>
     <p>Live for Speed Linux is an unofficial community launcher for the untouched official Live for Speed Windows build.</p>
-    <p>Version 0.2.1 targets exact LFS 0.8C19 new graphics, which upstream labels PUBLIC TEST rather than stable.</p>
+    <p>Version 0.2.2 targets exact LFS 0.8C19 new graphics, which upstream labels PUBLIC TEST rather than stable.</p>
     <p>On first launch, one informed setup prompt downloads official files, verifies every immutable game and Wine runtime file, configures exact Wine 11.15-1 and DXVK D3D11/DXGI, and starts the game. Later launches use the direct low-overhead path.</p>
     <p>Live for Speed is proprietary software from Scawen Roberts, Eric Bailey, and Victor van Vlaardingen. This community wrapper is not affiliated with or endorsed by the Live for Speed developers.</p>
   </description>
@@ -29,6 +29,11 @@
     <content_attribute id="social-chat">intense</content_attribute>
   </content_rating>
   <releases>
+    <release version="0.2.2" date="2026-08-14">
+      <description>
+        <p>Upgrade official GitHub Actions to their Node 24 major releases and keep CI and Pages maintenance current.</p>
+      </description>
+    </release>
     <release version="0.2.1" date="2026-08-14">
       <description>
         <p>Prevent main content from overflowing its grid track and obscuring the desktop status sidebar.</p>
